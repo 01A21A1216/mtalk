@@ -1,0 +1,18 @@
+{
+  "name": "MTalk — My Voice",
+  "short_name": "MTalk",
+  "description": "AAC picture communication app for non-verbal kids (English + Hindi)",
+  "start_url": "/",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#fef6ff",
+  "theme_color": "#6a1b9a",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

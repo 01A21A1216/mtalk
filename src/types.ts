@@ -1,0 +1,101 @@
+export type Language = 'en' | 'hi' | 'te' | 'ta' | 'kn';
+
+/** Age tiers: 1 = Little (1-4 yrs), 2 = Junior (5-9 yrs), 3 = Senior (10-15 yrs) */
+export type AgeMode = 1 | 2 | 3;
+
+export interface Word {
+  id: string;
+  emoji: string;
+  en: string;
+  hi: string;
+  /** Text actually spoken aloud, when different from the label (e.g. "Amma" vs "Mom") */
+  speakEn?: string;
+  speakHi?: string;
+  /** Minimum age tier this word appears in */
+  level: AgeMode;
+  /** Custom tile: photo (data URL) shown instead of the emoji */
+  image?: string;
+  /** Custom tile: recorded voice (data URL) played instead of TTS */
+  audio?: string;
+  /** Tapping this tile opens the story player instead of speaking a word */
+  storyId?: string;
+}
+
+/** A parent-created tile persisted in IndexedDB */
+export interface CustomTile {
+  id: string;
+  en: string;
+  hi: string;
+  image: string;
+  audio?: string;
+  createdAt: number;
+  /** Owning child profile (legacy tiles belong to the first profile) */
+  profileId?: string;
+  /** Custom category the tile lives in; empty = "My Words" */
+  categoryId?: string;
+}
+
+/** A child profile — all data (tiles, progress, settings) is per-profile */
+export interface Profile {
+  id: string;
+  name: string;
+  emoji: string;
+}
+
+/** A parent-created category for organising custom tiles */
+export interface CustomCategory {
+  id: string;
+  name: string;
+  emoji: string;
+  color: string;
+  colorDark: string;
+}
+
+/** Per-word quiz mastery, persisted in localStorage */
+export interface WordStat {
+  attempts: number;
+  correct: number;
+  /** consecutive first-try correct answers; >= 3 counts as mastered */
+  streak: number;
+}
+
+export type CategoryGroup = 'talk' | 'learn';
+
+export interface Category {
+  id: string;
+  emoji: string;
+  en: string;
+  hi: string;
+  /** Fitzgerald-key inspired colour for the whole category */
+  color: string;
+  colorDark: string;
+  level: AgeMode;
+  /** Which top-level tab the category lives under (defaults to 'talk') */
+  group?: CategoryGroup;
+  words: Word[];
+}
+
+export interface Settings {
+  language: Language;
+  ageMode: AgeMode;
+  speechRate: number;
+  /** Show the small second-language caption under each label */
+  showBothLanguages: boolean;
+  /** Speak each word immediately when its tile is tapped */
+  speakOnTap: boolean;
+  /** Vibrate briefly on every tap (Android) */
+  vibrateOnTap: boolean;
+  /** Extra space between tiles for kids who mis-tap */
+  roomyGrid: boolean;
+  /** Switch-scanning access: tiles highlight in turn, tap anywhere to select */
+  scanning: boolean;
+  /** First–Then visual schedule: word ids chosen by the caregiver */
+  firstThenFirst: string | null;
+  firstThenThen: string | null;
+}
+
+/** One spoken sentence, kept in the replay history */
+export interface HistoryEntry {
+  wordIds: string[];
+  ts: number;
+}

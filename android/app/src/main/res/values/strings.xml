@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MTalk</string>
+    <string name="title_activity_main">MTalk</string>
+    <string name="package_name">com.mxailabs.mtalk</string>
+    <string name="custom_url_scheme">com.mxailabs.mtalk</string>
+</resources>
