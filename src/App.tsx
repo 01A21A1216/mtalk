@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CategoryBar } from './components/CategoryBar';
 import { DaySchedule } from './components/DaySchedule';
 import { ProfilePicker } from './components/ProfilePicker';
@@ -37,7 +37,7 @@ const CalmCorner = lazy(() =>
 import { CATEGORIES, QUICK_WORDS } from './data/vocabulary';
 import { STORIES } from './data/stories';
 import { SCRIPT_SETS, TRACE_SETS } from './data/traceSets';
-import { UI, wordLabel } from './i18n';
+import { UI, sectionLabel, wordLabel } from './i18n';
 import { useCustomCategories } from './hooks/useCustomCategories';
 import { useCustomStories } from './hooks/useCustomStories';
 import { useCustomTiles } from './hooks/useCustomTiles';
@@ -257,15 +257,17 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
             ...c,
             words: [
               ...c.words,
-              ...customStories.map((s) => ({
-                id: `story-${s.id}`,
-                emoji: '📖',
-                en: s.title,
-                hi: s.title,
-                level: 1 as const,
-                image: s.pages[0]?.image,
-                storyId: `custom:${s.id}`,
-              })),
+              ...customStories.map(
+                (s): Word => ({
+                  id: `story-${s.id}`,
+                  emoji: '📖',
+                  en: s.title,
+                  hi: s.title,
+                  level: 1,
+                  image: s.pages[0]?.image,
+                  storyId: `custom:${s.id}`,
+                }),
+              ),
             ],
           }
         : c,
@@ -315,6 +317,24 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
 
   // when the caregiver wants words echoed in the home language
   const echoLang = settings.speakMotherTongue ? settings.motherTongue : null;
+
+  // split the board into labelled blocks (First 100); one unlabelled block otherwise
+  const wordGroups = useMemo(() => {
+    const groups: { key: string; section?: string; offset: number; words: Word[] }[] = [];
+    displayWords.forEach((word, index) => {
+      const startsBlock = word.section && !choiceMode;
+      if (groups.length === 0 || startsBlock) {
+        groups.push({
+          key: startsBlock ? `sec-${word.section}` : 'all',
+          section: startsBlock ? word.section : undefined,
+          offset: index,
+          words: [],
+        });
+      }
+      groups[groups.length - 1].words.push(word);
+    });
+    return groups;
+  }, [displayWords, choiceMode]);
 
   const triggerCelebration = () => {
     setCelebrate(true);
@@ -393,6 +413,14 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
   }, [scanActive, displayWords]);
 
   const boardScreen = screen === 'home' || screen === 'talk' || screen === 'learn';
+
+  const gridClass = `tile-grid tile-grid-age-${settings.ageMode} ${settings.roomyGrid ? 'tile-grid-roomy' : ''} ${scanActive ? 'tile-grid-scanning' : ''} ${choiceMode && choicePicks.length > 0 ? 'tile-grid-choice' : ''}`;
+  const gridStyle = settings.tileSize
+    ? {
+        gridTemplateColumns: `repeat(auto-fill, minmax(${settings.tileSize}px, 1fr))`,
+        gridAutoRows: `${settings.tileSize - 6}px`,
+      }
+    : undefined;
 
   // ✨ Next-word suggestions learned from the child's own sentences
   const suggestionWords = (boardScreen
@@ -647,18 +675,7 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
             />
           </Suspense>
         ) : (
-          <main
-            className={`tile-grid tile-grid-age-${settings.ageMode} ${settings.roomyGrid ? 'tile-grid-roomy' : ''} ${scanActive ? 'tile-grid-scanning' : ''} ${choiceMode && choicePicks.length > 0 ? 'tile-grid-choice' : ''}`}
-            style={
-              settings.tileSize
-                ? {
-                    gridTemplateColumns: `repeat(auto-fill, minmax(${settings.tileSize}px, 1fr))`,
-                    gridAutoRows: `${settings.tileSize - 6}px`,
-                  }
-                : undefined
-            }
-            onClickCapture={handleScanSelect}
-          >
+          <main className="board-scroll" onClickCapture={handleScanSelect}>
             {screen === 'home' && displayWords.length === 0 && (
               <p className="home-empty">
                 🏠 {profile.name}'s board is empty. Grown-ups: add tiles in ⚙️
@@ -666,18 +683,35 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
                 here automatically as words get used.
               </p>
             )}
-            {displayWords.map((word, index) => (
-              <Tile
-                key={word.id}
-                word={word}
-                language={settings.language}
-                motherTongue={settings.motherTongue}
-                showBoth={settings.showBothLanguages}
-                color={activeCategory?.color ?? '#FFF8E1'}
-                colorDark={activeCategory?.colorDark ?? '#FF8F00'}
-                scanned={scanActive && index === scanIndex % displayWords.length}
-                onTap={handleTileTap}
-              />
+            {wordGroups.map((group) => (
+              <Fragment key={group.key}>
+                {group.section && (
+                  <h2
+                    className="tile-section"
+                    style={{ color: activeCategory?.colorDark ?? '#FF8F00' }}
+                  >
+                    {sectionLabel(group.section, settings.language)}
+                  </h2>
+                )}
+                <div className={gridClass} style={gridStyle}>
+                  {group.words.map((word, i) => (
+                    <Tile
+                      key={word.id}
+                      word={word}
+                      language={settings.language}
+                      motherTongue={settings.motherTongue}
+                      showBoth={settings.showBothLanguages}
+                      color={activeCategory?.color ?? '#FFF8E1'}
+                      colorDark={activeCategory?.colorDark ?? '#FF8F00'}
+                      scanned={
+                        scanActive &&
+                        group.offset + i === scanIndex % displayWords.length
+                      }
+                      onTap={handleTileTap}
+                    />
+                  ))}
+                </div>
+              </Fragment>
             ))}
           </main>
         )}

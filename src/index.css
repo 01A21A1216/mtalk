@@ -213,6 +213,27 @@ button {
   text-align: center;
 }
 
+/* labelled block heading above a tile grid (First 100) */
+.tile-section {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  padding: 0 2px;
+  margin: 0 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tile-section::after {
+  content: '';
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.25;
+}
+
 .home-empty {
   grid-column: 1 / -1;
   font-size: 1.1rem;
@@ -495,14 +516,22 @@ button {
 
 /* ---------- Tile grid ---------- */
 
-.tile-grid {
+/* the scrolling board area; holds one grid, or a grid per labelled block */
+.board-scroll {
   flex: 1;
   min-width: 0;
   overflow-y: auto;
+  padding: 6px 2px 16px;
+}
+
+.tile-grid {
   display: grid;
   gap: 12px;
-  padding: 6px 2px 16px;
   align-content: start;
+}
+
+.tile-grid + .tile-section {
+  margin-top: 18px;
 }
 
 /* Little: enormous tiles, Junior: large, Senior: medium.

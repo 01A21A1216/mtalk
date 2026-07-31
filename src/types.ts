@@ -21,6 +21,8 @@ export interface Word {
   storyId?: string;
   /** Tapping this tile opens the timed YouTube player */
   videoId?: string;
+  /** Starts a labelled block in the grid (key into i18n SECTIONS) */
+  section?: string;
 }
 
 /** One page of a parent-made social story */

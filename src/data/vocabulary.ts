@@ -79,6 +79,47 @@ const DOSA_IMG = svgImage(
 </svg>`,
 );
 
+/**
+ * Teaching order for the First 100 board: the people a child names first,
+ * then the words that get things done, then the world around them. Each
+ * entry may open a labelled block (see SECTIONS in i18n).
+ */
+const FIRST100_ORDER: [id: string, section?: string][] = [
+  ['f-mama', 'family'], ['f-papa'], ['f-baby'], ['f-dadi'], ['f-dada'],
+  ['f-friend'], ['f-me'], ['f-you'],
+  ['f-hi', 'talking'], ['f-bye'], ['f-yes'], ['f-no'], ['f-please'],
+  ['f-thankyou'], ['f-sorry'], ['f-more'], ['f-alldone'], ['f-what'], ['f-where'],
+  ['f-happy', 'feelings'], ['f-sad'], ['f-love'], ['f-pain'],
+  ['f-want', 'doing'], ['f-eat'], ['f-drink'], ['f-go'], ['f-come'], ['f-stop'],
+  ['f-sit'], ['f-stand'], ['f-run'], ['f-jump'], ['f-play'], ['f-open'],
+  ['f-close'], ['f-give'], ['f-take'], ['f-look'], ['f-help'], ['f-sleep'],
+  ['f-wash'],
+  ['f-water', 'eating'], ['f-milk'], ['f-roti'], ['f-rice'], ['f-dal'],
+  ['f-curd'], ['f-egg'], ['f-banana'], ['f-apple'], ['f-mango'], ['f-biscuit'],
+  ['f-juice'], ['f-sweets'],
+  ['f-head', 'body'], ['f-hair'], ['f-eye'], ['f-ear'], ['f-nose'], ['f-mouth'],
+  ['f-teeth'], ['f-hand'], ['f-tummy'], ['f-foot'],
+  ['f-ball', 'things'], ['f-toy'], ['f-book'], ['f-phone'], ['f-tv'], ['f-cup'],
+  ['f-spoon'], ['f-bed'], ['f-door'], ['f-light'], ['f-shoe'], ['f-car'],
+  ['f-bus'], ['f-cycle'],
+  ['f-dog', 'animals'], ['f-cat'], ['f-cow'], ['f-bird'], ['f-fish'], ['f-duck'],
+  ['f-sun', 'outside'], ['f-moon'], ['f-star'], ['f-tree'], ['f-flower'], ['f-rain'],
+  ['f-this', 'littlewords'], ['f-that'], ['f-mine'], ['f-up'], ['f-down'],
+  ['f-in'], ['f-out'], ['f-hot'], ['f-cold'],
+];
+
+function arrangeFirst100(words: Word[]): Word[] {
+  const byId = new Map(words.map((word) => [word.id, word]));
+  const arranged = FIRST100_ORDER.map(([id, section]) => {
+    const word = byId.get(id);
+    if (!word) throw new Error(`First 100 order references unknown word: ${id}`);
+    byId.delete(id);
+    return section ? { ...word, section } : word;
+  });
+  // anything not listed keeps its original place at the end
+  return [...arranged, ...byId.values()];
+}
+
 export const CATEGORIES: Category[] = [
   {
     id: 'social',
@@ -432,7 +473,7 @@ export const CATEGORIES: Category[] = [
     colorDark: '#FF8F00',
     level: 1,
     group: 'learn',
-    words: [
+    words: arrangeFirst100([
       // People
       w('f-mama', '👩', 'Mama', 'माँ'),
       w('f-papa', '👨', 'Papa', 'पापा'),
@@ -541,7 +582,7 @@ export const CATEGORIES: Category[] = [
       w('f-sad', '😢', 'Sad', 'उदास'),
       w('f-pain', '🤕', 'Pain', 'दर्द'),
       w('f-love', '❤️', 'Love', 'प्यार'),
-    ],
+    ]),
   },
   {
     id: 'numbers',

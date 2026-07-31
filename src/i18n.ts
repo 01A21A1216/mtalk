@@ -47,6 +47,84 @@ export function wordSecondary(
   return wordLabel(word, mt);
 }
 
+/** Labelled blocks inside a category (used by the First 100 board) */
+const SECTIONS: Record<string, Record<Language, string>> = {
+  family: {
+    en: '👨‍👩‍👧 Family',
+    hi: '👨‍👩‍👧 परिवार',
+    te: '👨‍👩‍👧 కుటుంబం',
+    ta: '👨‍👩‍👧 குடும்பம்',
+    kn: '👨‍👩‍👧 ಕುಟುಂಬ',
+  },
+  talking: {
+    en: '💬 Talking',
+    hi: '💬 बातचीत',
+    te: '💬 మాటలు',
+    ta: '💬 பேச்சு',
+    kn: '💬 ಮಾತು',
+  },
+  feelings: {
+    en: '😊 Feelings',
+    hi: '😊 भावनाएँ',
+    te: '😊 భావాలు',
+    ta: '😊 உணர்வுகள்',
+    kn: '😊 ಭಾವನೆಗಳು',
+  },
+  doing: {
+    en: '🏃 Doing',
+    hi: '🏃 काम',
+    te: '🏃 పనులు',
+    ta: '🏃 செயல்கள்',
+    kn: '🏃 ಕೆಲಸಗಳು',
+  },
+  eating: {
+    en: '🍽️ Eating',
+    hi: '🍽️ खाना',
+    te: '🍽️ ఆహారం',
+    ta: '🍽️ உணவு',
+    kn: '🍽️ ಊಟ',
+  },
+  body: {
+    en: '🖐️ My body',
+    hi: '🖐️ शरीर',
+    te: '🖐️ శరీరం',
+    ta: '🖐️ உடல்',
+    kn: '🖐️ ದೇಹ',
+  },
+  things: {
+    en: '🧸 Things',
+    hi: '🧸 चीज़ें',
+    te: '🧸 వస్తువులు',
+    ta: '🧸 பொருட்கள்',
+    kn: '🧸 ವಸ್ತುಗಳು',
+  },
+  animals: {
+    en: '🐶 Animals',
+    hi: '🐶 जानवर',
+    te: '🐶 జంతువులు',
+    ta: '🐶 விலங்குகள்',
+    kn: '🐶 ಪ್ರಾಣಿಗಳು',
+  },
+  outside: {
+    en: '🌳 Outside',
+    hi: '🌳 बाहर',
+    te: '🌳 బయట',
+    ta: '🌳 வெளியே',
+    kn: '🌳 ಹೊರಗೆ',
+  },
+  littlewords: {
+    en: '➕ Little words',
+    hi: '➕ छोटे शब्द',
+    te: '➕ చిన్న పదాలు',
+    ta: '➕ சிறு சொற்கள்',
+    kn: '➕ ಚಿಕ್ಕ ಪದಗಳು',
+  },
+};
+
+export function sectionLabel(key: string, language: Language): string {
+  return SECTIONS[key]?.[language] ?? SECTIONS[key]?.en ?? key;
+}
+
 export const LANGUAGE_NAMES: Record<Language, string> = {
   en: 'English',
   hi: 'हिन्दी',
