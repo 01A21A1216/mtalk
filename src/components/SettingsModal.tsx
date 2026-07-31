@@ -4,6 +4,7 @@ import { putTile } from '../services/db';
 import { kidLockAvailable, lockApp, unlockApp } from '../services/kidlock';
 import { APP_VERSION } from '../version';
 import { profileKey } from '../hooks/useProfiles';
+import { shareProgressReport } from '../services/progressReport';
 import type { AgeMode, CustomCategory, CustomStory, CustomTile, Profile, Settings, VideoTile, Word } from '../types';
 
 const BACKUP_BASES = ['settings', 'mastery', 'usage', 'history', 'bigrams', 'cats', 'home'];
@@ -564,6 +565,24 @@ export function SettingsModal({
                   ))}
                 </div>
               )}
+              <button
+                className="btn-secondary btn-add-tile"
+                style={{ marginTop: 10 }}
+                onClick={() =>
+                  void shareProgressReport({
+                    childName:
+                      profiles.find((p) => p.id === activeProfileId)?.name ?? 'My Kid',
+                    language: settings.language,
+                    usedThisWeek,
+                    newThisWeek,
+                    masteredCount,
+                    practicedCount,
+                    topWords,
+                  })
+                }
+              >
+                📄 Share progress report (for therapist / family)
+              </button>
             </section>
 
             <section className="toggles">

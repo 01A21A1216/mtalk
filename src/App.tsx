@@ -47,6 +47,7 @@ import { useUsage } from './hooks/useUsage';
 import { useVideos, videoThumbnail } from './hooks/useVideos';
 import { useVideoTime } from './hooks/useVideoTime';
 import { shareSentenceCard } from './services/shareCard';
+import { playWordSfx } from './services/soundEffects';
 import { playPop, playSequence, speakWord } from './services/speech';
 import type { Category, CustomTile, Profile, Word } from './types';
 
@@ -331,7 +332,12 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
       }
       recordUse(word.id);
       recordPair(lastWordIdRef.current, word.id);
-      if (settings.speakOnTap) speakWord(word, settings.language, settings.speechRate);
+      if (settings.speakOnTap) {
+        // fun sound first (moo! / horn), then the word itself
+        void playWordSfx(word.id, settings.language, settings.speechRate).then(() =>
+          speakWord(word, settings.language, settings.speechRate),
+        );
+      }
       setSentence((prev) =>
         prev.length >= MAX_SENTENCE_WORDS ? prev : [...prev, word],
       );
