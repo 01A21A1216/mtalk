@@ -709,6 +709,193 @@ button {
   border-radius: 6px;
 }
 
+/* ---------- 🗓️ Full-day schedule ---------- */
+
+.day-schedule {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px;
+  flex-shrink: 0;
+  scrollbar-width: thin;
+}
+
+.ds-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: 16px;
+  background: #fff;
+  border: 3px solid #d5c8ef;
+  flex-shrink: 0;
+  min-width: 92px;
+  transition: transform 0.15s, border-color 0.15s, opacity 0.15s;
+}
+
+.ds-current {
+  border-color: #26a69a;
+  box-shadow: 0 4px 0 #26a69a;
+  transform: scale(1.05);
+}
+
+.ds-done {
+  opacity: 0.5;
+}
+
+.ds-done .ds-name {
+  text-decoration: line-through;
+}
+
+.ds-face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: none;
+  padding: 0;
+}
+
+.ds-time {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #00695c;
+}
+
+.ds-emoji {
+  font-size: 1.9rem;
+  line-height: 1;
+}
+
+.ds-img {
+  width: 34px;
+  height: 34px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.ds-name {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #4a3f60;
+  max-width: 88px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ds-tick {
+  background: none;
+  font-size: 1.1rem;
+  padding: 0;
+  line-height: 1;
+}
+
+/* ---------- ✌️ Choice mode ---------- */
+
+.tile-grid-choice {
+  grid-template-columns: repeat(2, 1fr) !important;
+  grid-auto-rows: minmax(200px, 44vh) !important;
+  align-content: center;
+  gap: 26px !important;
+}
+
+.tile-grid-choice .tile-emoji {
+  font-size: 90px;
+}
+
+.tile-grid-choice .tile-label {
+  font-size: 26px;
+}
+
+.tile-grid-choice .tile-image {
+  width: 120px;
+  height: 120px;
+}
+
+/* ---------- 🫧 Calm corner ---------- */
+
+.btn-calm {
+  font-size: 1.5rem;
+  background: #e0f7fa;
+  border-radius: 50%;
+  width: 52px;
+  height: 52px;
+  box-shadow: 0 2px 6px rgba(80, 40, 120, 0.15);
+  flex-shrink: 0;
+}
+
+.calm-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: linear-gradient(160deg, #b2ebf2, #c5cae9 60%, #d1c4e9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+}
+
+.calm-bubble {
+  width: min(46vh, 46vw);
+  height: min(46vh, 46vw);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffffff, #80deea 70%);
+  box-shadow: 0 0 60px rgba(255, 255, 255, 0.7);
+  display: grid;
+  place-items: center;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: forwards;
+}
+
+.calm-in {
+  animation-name: calm-grow;
+}
+
+.calm-hold {
+  animation-name: calm-steady;
+}
+
+.calm-out {
+  animation-name: calm-shrink;
+}
+
+@keyframes calm-grow {
+  from { transform: scale(0.55); }
+  to { transform: scale(1); }
+}
+
+@keyframes calm-steady {
+  from { transform: scale(1); }
+  to { transform: scale(1); }
+}
+
+@keyframes calm-shrink {
+  from { transform: scale(1); }
+  to { transform: scale(0.55); }
+}
+
+.calm-face {
+  font-size: min(12vh, 12vw);
+}
+
+.calm-label {
+  font-size: clamp(1.4rem, 4vw, 2.4rem);
+  font-weight: 800;
+  color: #26355e;
+}
+
+.calm-rounds {
+  font-size: 1.4rem;
+  min-height: 1.6rem;
+}
+
+.calm-close {
+  font-size: 1.1rem;
+}
+
 /* ---------- 1️⃣➡️2️⃣ First–Then schedule ---------- */
 
 .first-then {

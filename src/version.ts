@@ -1,2 +1,2 @@
 /** Bump together with android/app/build.gradle versionName on every release */
-export const APP_VERSION = '1.9.0';
+export const APP_VERSION = '2.0.0';

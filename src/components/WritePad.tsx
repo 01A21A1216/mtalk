@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { TRACE_SETS, type TraceItem } from '../data/traceSets';
+import { SCRIPT_SETS, TRACE_SETS, type TraceItem } from '../data/traceSets';
 import { playPop, speak } from '../services/speech';
 
 interface WritePadProps {
@@ -21,7 +21,8 @@ export function WritePad({ rate, setId }: WritePadProps) {
   const boxRef = useRef<HTMLDivElement>(null);
   const drawingRef = useRef(false);
 
-  const activeSet = TRACE_SETS.find((s) => s.id === setId) ?? null;
+  const allSets = [...TRACE_SETS, ...Object.values(SCRIPT_SETS)];
+  const activeSet = allSets.find((s) => s.id === setId) ?? null;
 
   const clearCanvas = () => {
     const canvas = canvasRef.current;
@@ -31,7 +32,8 @@ export function WritePad({ rate, setId }: WritePadProps) {
 
   // New set picked in the sidebar: start at its first item with a clean sheet
   useEffect(() => {
-    const first = TRACE_SETS.find((s) => s.id === setId)?.items[0] ?? null;
+    const first =
+      [...TRACE_SETS, ...Object.values(SCRIPT_SETS)].find((s) => s.id === setId)?.items[0] ?? null;
     setItem(first);
     clearCanvas();
     if (first) speak(first.name, 'en', rate);

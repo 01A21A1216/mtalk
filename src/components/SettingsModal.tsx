@@ -5,7 +5,7 @@ import { kidLockAvailable, lockApp, unlockApp } from '../services/kidlock';
 import { APP_VERSION } from '../version';
 import { profileKey } from '../hooks/useProfiles';
 import { shareProgressReport } from '../services/progressReport';
-import type { AgeMode, CustomCategory, CustomStory, CustomTile, Profile, Settings, VideoTile, Word } from '../types';
+import type { AgeMode, CustomCategory, CustomStory, CustomTile, Profile, ScheduleStep, Settings, VideoTile, Word } from '../types';
 
 const BACKUP_BASES = ['settings', 'mastery', 'usage', 'history', 'bigrams', 'cats', 'home'];
 
@@ -37,6 +37,15 @@ interface SettingsModalProps {
   customStories: CustomStory[];
   onAddStory: () => void;
   onRemoveStory: (id: string) => void;
+  scheduleSteps: ScheduleStep[];
+  scheduleWords: Word[];
+  onAddScheduleStep: (wordId: string, time?: string) => void;
+  onRemoveScheduleStep: (id: string) => void;
+  onMoveScheduleStep: (id: string, delta: number) => void;
+  onResetSchedule: () => void;
+  choiceMode: boolean;
+  choicePicks: Word[];
+  onSetChoiceMode: (on: boolean, picks: Word[]) => void;
   onUpdate: (patch: Partial<Settings>) => void;
   onAddTile: () => void;
   onEditTile: (tile: CustomTile) => void;
@@ -82,6 +91,15 @@ export function SettingsModal({
   customStories,
   onAddStory,
   onRemoveStory,
+  scheduleSteps,
+  scheduleWords,
+  onAddScheduleStep,
+  onRemoveScheduleStep,
+  onMoveScheduleStep,
+  onResetSchedule,
+  choiceMode,
+  choicePicks,
+  onSetChoiceMode,
   onUpdate,
   onAddTile,
   onEditTile,
@@ -97,6 +115,10 @@ export function SettingsModal({
   const [videoUrl, setVideoUrl] = useState('');
   const [videoTitle, setVideoTitle] = useState('');
   const [videoError, setVideoError] = useState('');
+  const [stepPick, setStepPick] = useState('');
+  const [stepTime, setStepTime] = useState('');
+  const [choiceA, setChoiceA] = useState('');
+  const [choiceB, setChoiceB] = useState('');
 
   const exportBackup = () => {
     const data: Record<string, unknown> = { customTiles };
@@ -626,6 +648,170 @@ export function SettingsModal({
                 />
                 Scanning mode — tiles light up in turn, tap anywhere to choose
               </label>
+            </section>
+
+            <section>
+              <h3>🗓️ Day plan ({scheduleSteps.length} steps)</h3>
+              <p className="ft-hint">
+                The child's routine for the whole day, shown on the 🏠 Home tab.
+                They tap ⬜ as each step is finished; ticks clear every morning.
+              </p>
+              <div className="custom-tile-list">
+                {scheduleSteps.map((step, i) => {
+                  const w = scheduleWords[i];
+                  return (
+                    <div key={step.id} className="custom-tile-row">
+                      <span className="profile-row-avatar">{w?.image ? '⭐' : w?.emoji}</span>
+                      <span className="custom-tile-name">
+                        {step.time ? `${step.time} · ` : ''}
+                        {w ? wordLabel(w, settings.language) : '—'}
+                      </span>
+                      <button
+                        className="btn-delete"
+                        onClick={() => onMoveScheduleStep(step.id, -1)}
+                        aria-label="Move earlier"
+                      >
+                        ⬆️
+                      </button>
+                      <button
+                        className="btn-delete"
+                        onClick={() => onMoveScheduleStep(step.id, 1)}
+                        aria-label="Move later"
+                      >
+                        ⬇️
+                      </button>
+                      <button
+                        className="btn-delete"
+                        onClick={() => onRemoveScheduleStep(step.id)}
+                        aria-label="Delete step"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="add-row">
+                <input
+                  className="text-field add-row-emoji"
+                  type="text"
+                  placeholder="8:00"
+                  value={stepTime}
+                  maxLength={6}
+                  onChange={(e) => setStepTime(e.target.value)}
+                />
+                <select
+                  className="text-field add-row-field"
+                  value={stepPick}
+                  onChange={(e) => setStepPick(e.target.value)}
+                >
+                  <option value="">— Add a step —</option>
+                  {allWords.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.image ? '⭐' : w.emoji} {w.en}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  className="btn-secondary"
+                  onClick={() => {
+                    if (stepPick) {
+                      onAddScheduleStep(stepPick, stepTime);
+                      setStepPick('');
+                      setStepTime('');
+                    }
+                  }}
+                >
+                  ➕ Add
+                </button>
+                {scheduleSteps.length > 0 && (
+                  <button className="btn-secondary" onClick={onResetSchedule}>
+                    🔄 Clear ticks
+                  </button>
+                )}
+              </div>
+            </section>
+
+            <section>
+              <h3>✌️ Choice mode</h3>
+              <p className="ft-hint">
+                Show only two tiles so the child picks between them — "roti or
+                rice?". Great for starting communication.
+              </p>
+              <div className="add-row">
+                <select
+                  className="text-field add-row-field"
+                  value={choiceA}
+                  onChange={(e) => setChoiceA(e.target.value)}
+                >
+                  <option value="">— First choice —</option>
+                  {allWords.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.image ? '⭐' : w.emoji} {w.en}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  className="text-field add-row-field"
+                  value={choiceB}
+                  onChange={(e) => setChoiceB(e.target.value)}
+                >
+                  <option value="">— Second choice —</option>
+                  {allWords.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.image ? '⭐' : w.emoji} {w.en}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="modal-actions" style={{ justifyContent: 'flex-start' }}>
+                <button
+                  className="btn-primary"
+                  onClick={() => {
+                    const a = allWords.find((w) => w.id === choiceA);
+                    const b = allWords.find((w) => w.id === choiceB);
+                    if (a && b) {
+                      onSetChoiceMode(true, [a, b]);
+                      onClose();
+                    }
+                  }}
+                >
+                  ▶️ Start choice
+                </button>
+                {choiceMode && (
+                  <button className="btn-secondary" onClick={() => onSetChoiceMode(false, [])}>
+                    ✖ Stop choice mode
+                  </button>
+                )}
+              </div>
+              {choiceMode && choicePicks.length === 2 && (
+                <p className="progress-line">
+                  Active: {choicePicks[0].en} vs {choicePicks[1].en}
+                </p>
+              )}
+            </section>
+
+            <section>
+              <h3>🔲 Tile size</h3>
+              <div className="segmented">
+                {(
+                  [
+                    [0, 'Auto'],
+                    [100, 'Small'],
+                    [130, 'Medium'],
+                    [170, 'Large'],
+                    [210, 'Huge'],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    key={value}
+                    className={settings.tileSize === value ? 'seg-active' : ''}
+                    onClick={() => onUpdate({ tileSize: value })}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </section>
 
             <section>

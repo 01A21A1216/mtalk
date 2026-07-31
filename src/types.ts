@@ -120,6 +120,16 @@ export interface Settings {
   firstThenThen: string | null;
   /** Daily YouTube watching budget in minutes */
   videoLimitMins: number;
+  /** Tile size override: 0 = follow age mode, else px column width */
+  tileSize: 0 | 100 | 130 | 170 | 210;
+}
+
+/** One step in the full-day visual schedule */
+export interface ScheduleStep {
+  id: string;
+  wordId: string;
+  /** optional clock hint like "8:00" */
+  time?: string;
 }
 
 /** One spoken sentence, kept in the replay history */

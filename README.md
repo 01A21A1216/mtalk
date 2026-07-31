@@ -24,7 +24,12 @@ Built as a hybrid app: **Vite + React + TypeScript** web core wrapped with **Cap
 - **👨‍👩‍👧 Kid profiles** — "Who is talking today?" picker; every child gets isolated settings, tiles, progress, favourites, and home board
 - **🏠 Home tab** — each child's personal board: parent-pinned words + auto favourites + custom tiles
 - **📖 Stories & 🎵 Rhymes** — 16 read-aloud picture books (emoji scene per line, line highlighting, page arrows) in English + Hindi
-- **✍️ Write & Paint tab** — trace letters, numbers, shapes, symbols, animals, and cartoons, or free-paint with 7 colours
+- **🗓️ Day plan** — the child's full routine on the Home tab; they tick each step as it's done, ticks clear every morning
+- **🫧 Calm corner** — a breathing bubble with spoken 4-4-6 prompts for meltdowns, one tap from the header
+- **✌️ Choice mode** — show only two big tiles ("roti or rice?") to start communication
+- **🔊 Sound effects** — animals say their sounds, vehicles honk/siren/ring, in the child's language
+- **📄 Progress report** — one tap shares a stats card (words this week, mastery, top words) for therapist visits
+- **✍️ Write & Paint tab** — trace English letters, numbers, shapes, symbols, animals, cartoons, **and native scripts** (अ आ इ / అ ఆ ఇ / அ ஆ இ / ಅ ಆ ಇ), or free-paint with 7 colours
 - **🎬 Reward videos** — parents add YouTube links; kid-proof player (no controls, no seeking, can't reach YouTube) with a visual daily time budget, spoken one-minute warning, lock screen when time is up, and parent reset
 - **📁 Custom categories** — organise custom tiles into parent-created categories
 - **🔒 Kid lock** (installed app) — pins MTalk to the screen so the child can't leave; unlock via gated settings

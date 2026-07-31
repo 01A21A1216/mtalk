@@ -1,5 +1,6 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CategoryBar } from './components/CategoryBar';
+import { DaySchedule } from './components/DaySchedule';
 import { ProfilePicker } from './components/ProfilePicker';
 import { QuickBar } from './components/QuickBar';
 import { SentenceStrip } from './components/SentenceStrip';
@@ -30,9 +31,12 @@ const VideoPlayer = lazy(() =>
 const StoryEditor = lazy(() =>
   import('./components/StoryEditor').then((m) => ({ default: m.StoryEditor })),
 );
+const CalmCorner = lazy(() =>
+  import('./components/CalmCorner').then((m) => ({ default: m.CalmCorner })),
+);
 import { CATEGORIES, QUICK_WORDS } from './data/vocabulary';
 import { STORIES } from './data/stories';
-import { TRACE_SETS } from './data/traceSets';
+import { SCRIPT_SETS, TRACE_SETS } from './data/traceSets';
 import { UI, wordLabel } from './i18n';
 import { useCustomCategories } from './hooks/useCustomCategories';
 import { useCustomStories } from './hooks/useCustomStories';
@@ -42,6 +46,7 @@ import { useMastery } from './hooks/useMastery';
 import { SENTENCE_START, useBigrams } from './hooks/useBigrams';
 import { useHistory } from './hooks/useHistory';
 import { useProfiles } from './hooks/useProfiles';
+import { useSchedule } from './hooks/useSchedule';
 import { useSettings } from './hooks/useSettings';
 import { useUsage } from './hooks/useUsage';
 import { useVideos, videoThumbnail } from './hooks/useVideos';
@@ -115,7 +120,11 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
   const { recordPair, suggestNext } = useBigrams(profile.id);
   const { videos, addVideo, removeVideo } = useVideos(profile.id);
   const { stories: customStories, addStory, removeStory } = useCustomStories(profile.id);
+  const schedule = useSchedule(profile.id);
   const [storyEditorOpen, setStoryEditorOpen] = useState(false);
+  const [calmOpen, setCalmOpen] = useState(false);
+  const [choiceMode, setChoiceMode] = useState(false);
+  const [choicePicks, setChoicePicks] = useState<Word[]>([]);
   const [screen, setScreen] = useState<Screen>('home');
   const [activeCategoryId, setActiveCategoryId] = useState(CATEGORIES[0].id);
   const [sentence, setSentence] = useState<Word[]>([]);
@@ -300,7 +309,9 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
     [activeCategory, settings.ageMode],
   );
   // what the tile grid actually shows on the current screen
-  const displayWords = screen === 'home' ? homeWords : visibleWords;
+  const baseWords = screen === 'home' ? homeWords : visibleWords;
+  // choice mode narrows the board to two options the parent picked
+  const displayWords = choiceMode && choicePicks.length > 0 ? choicePicks : baseWords;
 
   const triggerCelebration = () => {
     setCelebrate(true);
@@ -417,6 +428,14 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
         </div>
         <div className="top-actions">
           <button
+            className="btn-calm"
+            onClick={() => setCalmOpen(true)}
+            aria-label="Calm corner — breathing"
+            title="Calm corner"
+          >
+            🫧
+          </button>
+          <button
             className="btn-profile"
             onClick={onSwitchProfile}
             aria-label={`Current profile ${profile.name} — switch`}
@@ -437,6 +456,24 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
       </header>
 
       <QuickBar language={settings.language} onTap={handleQuickTap} />
+
+      {boardScreen && screen === 'home' && schedule.steps.length > 0 && (
+        <DaySchedule
+          steps={schedule.steps}
+          doneIds={schedule.doneIds}
+          currentIndex={schedule.currentIndex}
+          wordIndex={wordIndex}
+          language={settings.language}
+          onToggle={(id) => {
+            playPop();
+            schedule.toggleDone(id);
+          }}
+          onSpeak={(w) => {
+            playPop();
+            speakWord(w, settings.language, settings.speechRate);
+          }}
+        />
+      )}
 
       {boardScreen && (
         <>
@@ -552,7 +589,10 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
                 <span className="category-emoji" aria-hidden="true">🎨</span>
                 <span>Paint</span>
               </button>
-              {TRACE_SETS.map((set) => {
+              {[
+                ...TRACE_SETS,
+                ...(SCRIPT_SETS[settings.language] ? [SCRIPT_SETS[settings.language]] : []),
+              ].map((set) => {
                 const active = writeSetId === set.id;
                 return (
                   <button
@@ -605,7 +645,15 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
           </Suspense>
         ) : (
           <main
-            className={`tile-grid tile-grid-age-${settings.ageMode} ${settings.roomyGrid ? 'tile-grid-roomy' : ''} ${scanActive ? 'tile-grid-scanning' : ''}`}
+            className={`tile-grid tile-grid-age-${settings.ageMode} ${settings.roomyGrid ? 'tile-grid-roomy' : ''} ${scanActive ? 'tile-grid-scanning' : ''} ${choiceMode && choicePicks.length > 0 ? 'tile-grid-choice' : ''}`}
+            style={
+              settings.tileSize
+                ? {
+                    gridTemplateColumns: `repeat(auto-fill, minmax(${settings.tileSize}px, 1fr))`,
+                    gridAutoRows: `${settings.tileSize - 6}px`,
+                  }
+                : undefined
+            }
             onClickCapture={handleScanSelect}
           >
             {screen === 'home' && displayWords.length === 0 && (
@@ -664,6 +712,20 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
           customStories={customStories}
           onAddStory={() => setStoryEditorOpen(true)}
           onRemoveStory={(id) => void removeStory(id)}
+          scheduleSteps={schedule.steps}
+          scheduleWords={schedule.steps
+            .map((s) => wordIndex.get(s.wordId))
+            .filter((w): w is Word => Boolean(w))}
+          onAddScheduleStep={schedule.addStep}
+          onRemoveScheduleStep={schedule.removeStep}
+          onMoveScheduleStep={schedule.moveStep}
+          onResetSchedule={schedule.resetDay}
+          choiceMode={choiceMode}
+          choicePicks={choicePicks}
+          onSetChoiceMode={(on, picks) => {
+            setChoiceMode(on);
+            setChoicePicks(picks);
+          }}
           videoRemainingSeconds={remainingSeconds}
           onResetVideoTime={resetToday}
           customTiles={customTiles}
@@ -729,6 +791,14 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
 
       {storyEditorOpen && (
         <StoryEditor onSave={addStory} onClose={() => setStoryEditorOpen(false)} />
+      )}
+
+      {calmOpen && (
+        <CalmCorner
+          language={settings.language}
+          rate={settings.speechRate}
+          onClose={() => setCalmOpen(false)}
+        />
       )}
 
       {activeVideo && (

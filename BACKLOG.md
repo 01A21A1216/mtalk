@@ -30,6 +30,8 @@ Priorities: **P1** = next up · **P2** = strong candidates · **P3** = later
 
 - v1.10 (web) — 🎬 YouTube reward videos (per-profile playlist with thumbnails, kid-proof shielded player with controls/keyboard/fullscreen disabled, daily minute budget with visual countdown + spoken 1-minute warning + lock screen, parent reset, auto daily reset); Write tab trace sets (letters/numbers/shapes/symbols/animals/cartoons) in left sidebar; tile layout hardened with container-relative sizing (no overflow at any screen/zoom)
 
+- v2.0 — Full-day visual schedule (Home tab strip, per-step ticks that clear overnight, current-step highlight, parent editor with reorder); calm-corner breathing bubble (4-4-6, spoken, 5 languages); choice mode (two big tiles); native-script tracing (Devanagari/Telugu/Tamil/Kannada) in Write; per-child tile size; animal/vehicle sound effects; shareable progress report; social stories builder; sentence share-as-image; GitHub Pages hosting
+
 ## P3 — later
 - **Scanning speed setting + row/column scanning** — current scanning is linear at fixed 1.8 s
 - **Backup improvements** — in-APK file save needs a Capacitor Filesystem plugin (browser/PWA download works today)

@@ -14,6 +14,7 @@ const DEFAULT_SETTINGS: Settings = {
   firstThenFirst: null,
   firstThenThen: null,
   videoLimitMins: 10,
+  tileSize: 0,
 };
 
 function loadSettings(key: string): Settings {

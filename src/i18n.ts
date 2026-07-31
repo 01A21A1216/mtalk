@@ -57,6 +57,10 @@ interface UiStrings {
   then: string;
   videoWarn: string;
   videoOver: string;
+  breatheIn: string;
+  breatheHold: string;
+  breatheOut: string;
+  whichOne: string;
 }
 
 export const UI: Record<Language, UiStrings> = {
@@ -76,6 +80,10 @@ export const UI: Record<Language, UiStrings> = {
     then: 'Then',
     videoWarn: 'One minute left!',
     videoOver: 'Video time is over for today!',
+    breatheIn: 'Breathe in',
+    breatheHold: 'Hold',
+    breatheOut: 'Breathe out',
+    whichOne: 'Which one?',
   },
   hi: {
     tagline: 'मेरी आवाज़',
@@ -93,6 +101,10 @@ export const UI: Record<Language, UiStrings> = {
     then: 'फिर',
     videoWarn: 'एक मिनट बचा है!',
     videoOver: 'आज के लिए वीडियो का समय खत्म!',
+    breatheIn: 'साँस लो',
+    breatheHold: 'रोको',
+    breatheOut: 'साँस छोड़ो',
+    whichOne: 'कौन सा?',
   },
   te: {
     tagline: 'నా గొంతు',
@@ -110,6 +122,10 @@ export const UI: Record<Language, UiStrings> = {
     then: 'తర్వాత',
     videoWarn: 'ఒక నిమిషం మిగిలింది!',
     videoOver: 'ఈరోజుకి వీడియో సమయం అయిపోయింది!',
+    breatheIn: 'ఊపిరి తీసుకో',
+    breatheHold: 'ఆగు',
+    breatheOut: 'ఊపిరి వదులు',
+    whichOne: 'ఏది కావాలి?',
   },
   ta: {
     tagline: 'என் குரல்',
@@ -127,6 +143,10 @@ export const UI: Record<Language, UiStrings> = {
     then: 'பிறகு',
     videoWarn: 'ஒரு நிமிடம் மீதம்!',
     videoOver: 'இன்றைக்கு வீடியோ நேரம் முடிந்தது!',
+    breatheIn: 'மூச்சை உள்ளே இழு',
+    breatheHold: 'நிறுத்து',
+    breatheOut: 'மூச்சை வெளியே விடு',
+    whichOne: 'எது வேண்டும்?',
   },
   kn: {
     tagline: 'ನನ್ನ ಧ್ವನಿ',
@@ -144,5 +164,9 @@ export const UI: Record<Language, UiStrings> = {
     then: 'ಆಮೇಲೆ',
     videoWarn: 'ಇನ್ನು ಒಂದು ನಿಮಿಷ!',
     videoOver: 'ಇವತ್ತಿಗೆ ವಿಡಿಯೋ ಸಮಯ ಮುಗಿಯಿತು!',
+    breatheIn: 'ಉಸಿರು ಒಳಗೆ ತಗೊ',
+    breatheHold: 'ನಿಲ್ಲಿಸು',
+    breatheOut: 'ಉಸಿರು ಹೊರಗೆ ಬಿಡು',
+    whichOne: 'ಯಾವುದು ಬೇಕು?',
   },
 };

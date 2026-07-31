@@ -16,6 +16,67 @@ export interface TraceSet {
   items: TraceItem[];
 }
 
+/** Native-script alphabets, offered when that language is active */
+export const SCRIPT_SETS: Record<string, TraceSet> = {
+  hi: {
+    id: 'script-hi',
+    emoji: 'अ',
+    name: 'हिन्दी',
+    color: '#FFF3E0',
+    colorDark: '#E65100',
+    items: [
+      ['अ', 'a'], ['आ', 'aa'], ['इ', 'i'], ['ई', 'ee'], ['उ', 'u'], ['ऊ', 'oo'],
+      ['ए', 'e'], ['ऐ', 'ai'], ['ओ', 'o'], ['औ', 'au'], ['क', 'ka'], ['ख', 'kha'],
+      ['ग', 'ga'], ['घ', 'gha'], ['च', 'cha'], ['छ', 'chha'], ['ज', 'ja'], ['ट', 'ta'],
+      ['ड', 'da'], ['त', 'ta'], ['द', 'da'], ['न', 'na'], ['प', 'pa'], ['ब', 'ba'],
+      ['म', 'ma'], ['य', 'ya'], ['र', 'ra'], ['ल', 'la'], ['व', 'va'], ['स', 'sa'],
+      ['ह', 'ha'],
+    ].map(([glyph, name]) => ({ glyph, name })),
+  },
+  te: {
+    id: 'script-te',
+    emoji: 'అ',
+    name: 'తెలుగు',
+    color: '#E0F2F1',
+    colorDark: '#00695C',
+    items: [
+      ['అ', 'a'], ['ఆ', 'aa'], ['ఇ', 'i'], ['ఈ', 'ee'], ['ఉ', 'u'], ['ఊ', 'oo'],
+      ['ఎ', 'e'], ['ఏ', 'ay'], ['ఐ', 'ai'], ['ఒ', 'o'], ['ఓ', 'oh'], ['క', 'ka'],
+      ['ఖ', 'kha'], ['గ', 'ga'], ['చ', 'cha'], ['జ', 'ja'], ['ట', 'ta'], ['డ', 'da'],
+      ['త', 'ta'], ['ద', 'da'], ['న', 'na'], ['ప', 'pa'], ['బ', 'ba'], ['మ', 'ma'],
+      ['య', 'ya'], ['ర', 'ra'], ['ల', 'la'], ['వ', 'va'], ['స', 'sa'], ['హ', 'ha'],
+    ].map(([glyph, name]) => ({ glyph, name })),
+  },
+  ta: {
+    id: 'script-ta',
+    emoji: 'அ',
+    name: 'தமிழ்',
+    color: '#FCE4EC',
+    colorDark: '#AD1457',
+    items: [
+      ['அ', 'a'], ['ஆ', 'aa'], ['இ', 'i'], ['ஈ', 'ee'], ['உ', 'u'], ['ஊ', 'oo'],
+      ['எ', 'e'], ['ஏ', 'ay'], ['ஐ', 'ai'], ['ஒ', 'o'], ['ஓ', 'oh'], ['க', 'ka'],
+      ['ங', 'nga'], ['ச', 'cha'], ['ஞ', 'nya'], ['ட', 'ta'], ['ண', 'na'], ['த', 'tha'],
+      ['ந', 'na'], ['ப', 'pa'], ['ம', 'ma'], ['ய', 'ya'], ['ர', 'ra'], ['ல', 'la'],
+      ['வ', 'va'], ['ழ', 'zha'], ['ள', 'la'], ['ற', 'ra'], ['ன', 'na'],
+    ].map(([glyph, name]) => ({ glyph, name })),
+  },
+  kn: {
+    id: 'script-kn',
+    emoji: 'ಅ',
+    name: 'ಕನ್ನಡ',
+    color: '#E8EAF6',
+    colorDark: '#283593',
+    items: [
+      ['ಅ', 'a'], ['ಆ', 'aa'], ['ಇ', 'i'], ['ಈ', 'ee'], ['ಉ', 'u'], ['ಊ', 'oo'],
+      ['ಎ', 'e'], ['ಏ', 'ay'], ['ಐ', 'ai'], ['ಒ', 'o'], ['ಓ', 'oh'], ['ಕ', 'ka'],
+      ['ಖ', 'kha'], ['ಗ', 'ga'], ['ಚ', 'cha'], ['ಜ', 'ja'], ['ಟ', 'ta'], ['ಡ', 'da'],
+      ['ತ', 'ta'], ['ದ', 'da'], ['ನ', 'na'], ['ಪ', 'pa'], ['ಬ', 'ba'], ['ಮ', 'ma'],
+      ['ಯ', 'ya'], ['ರ', 'ra'], ['ಲ', 'la'], ['ವ', 'va'], ['ಸ', 'sa'], ['ಹ', 'ha'],
+    ].map(([glyph, name]) => ({ glyph, name })),
+  },
+};
+
 export const TRACE_SETS: TraceSet[] = [
   {
     id: 'letters',
