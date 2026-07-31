@@ -523,13 +523,18 @@ button {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 2cqw;
   aspect-ratio: 1 / 0.92;
   border-radius: 24px;
   border: 4px solid;
   box-shadow: 0 5px 0 rgba(0, 0, 0, 0.12);
   transition: transform 0.1s;
-  padding: 8px;
+  padding: 6px;
+  overflow: hidden;
+  min-width: 0;
+  /* children size themselves against the tile WIDTH (inline-size containment
+     is grid-safe; size containment collapses grid rows in some engines) */
+  container-type: inline-size;
 }
 
 .tile:active {
@@ -557,36 +562,49 @@ button {
 }
 
 .tile-emoji {
-  font-size: clamp(2.4rem, 6vw, 4rem);
+  /* fallback for old browsers, then container-relative sizing */
+  font-size: clamp(1.8rem, 3.4vw, 2.8rem);
+  font-size: 33cqw;
   line-height: 1;
   filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.12));
 }
 
 .tile-label {
-  font-size: clamp(0.95rem, 2vw, 1.25rem);
+  font-size: clamp(0.85rem, 1.8vw, 1.2rem);
+  font-size: clamp(0.7rem, 11.5cqw, 1.35rem);
   font-weight: 800;
   text-align: center;
   line-height: 1.15;
+  max-width: 100%;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow-wrap: break-word;
+  flex-shrink: 0;
 }
 
 .tile-sublabel {
-  font-size: clamp(0.7rem, 1.4vw, 0.85rem);
+  font-size: clamp(0.65rem, 1.3vw, 0.85rem);
+  font-size: clamp(0.6rem, 8.5cqw, 0.95rem);
   font-weight: 600;
   color: #00000073;
   text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
 }
 
-.tile-grid-age-1 .tile-emoji {
-  font-size: clamp(3.4rem, 9vw, 5.5rem);
-}
-
-.tile-grid-age-1 .tile-label {
-  font-size: clamp(1.2rem, 2.6vw, 1.6rem);
-}
+/* age-1 tiles are physically bigger, so container-relative sizes scale up
+   automatically — no per-age font overrides needed */
 
 .tile-image {
-  width: clamp(52px, 9vw, 96px);
-  height: clamp(52px, 9vw, 96px);
+  width: clamp(44px, 6vw, 76px);
+  height: clamp(44px, 6vw, 76px);
+  width: 38cqw;
+  height: 38cqw;
   object-fit: cover;
   border-radius: 14px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18);
@@ -1222,6 +1240,127 @@ button {
   font-size: 0.9rem;
   font-weight: 700;
   color: #4a3f60;
+}
+
+/* ---------- 🎬 Timed video player ---------- */
+
+.video-backdrop {
+  padding: 10px;
+}
+
+.video-shell {
+  width: min(960px, 100%);
+  height: min(640px, 92vh);
+  background: #1a1030;
+  border-radius: 22px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.45);
+}
+
+.video-topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #2a1b4d;
+}
+
+.video-title {
+  font-weight: 800;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 30%;
+}
+
+.video-timer {
+  flex: 1;
+  height: 14px;
+  background: #453070;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.video-timer-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #66bb6a, #9ccc65);
+  border-radius: 999px;
+  transition: width 1s linear;
+}
+
+.video-timer-low {
+  background: linear-gradient(90deg, #ef5350, #ff8a65);
+}
+
+.video-clock {
+  font-weight: 800;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.video-clock-low {
+  color: #ff8a80;
+  animation: pulse 1s infinite;
+}
+
+.video-close {
+  width: 44px;
+  height: 44px;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.video-stage {
+  flex: 1;
+  position: relative;
+  background: #000;
+}
+
+.video-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #000;
+}
+
+/* invisible layer over the video — kids can look but not touch */
+.video-shield {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  touch-action: none;
+}
+
+.video-locked {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px;
+  text-align: center;
+}
+
+.video-locked-emoji {
+  font-size: 4rem;
+}
+
+.video-locked-text {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.video-locked-sub {
+  color: #b39ddb;
+  font-weight: 600;
 }
 
 /* ---------- 📖 Story player ---------- */

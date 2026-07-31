@@ -4,7 +4,7 @@ import { putTile } from '../services/db';
 import { kidLockAvailable, lockApp, unlockApp } from '../services/kidlock';
 import { APP_VERSION } from '../version';
 import { profileKey } from '../hooks/useProfiles';
-import type { AgeMode, CustomCategory, CustomTile, Profile, Settings, Word } from '../types';
+import type { AgeMode, CustomCategory, CustomTile, Profile, Settings, VideoTile, Word } from '../types';
 
 const BACKUP_BASES = ['settings', 'mastery', 'usage', 'history', 'bigrams', 'cats', 'home'];
 
@@ -28,6 +28,11 @@ interface SettingsModalProps {
   onRemoveCategory: (id: string) => void;
   onAddPin: (wordId: string) => void;
   onRemovePin: (wordId: string) => void;
+  videos: VideoTile[];
+  onAddVideo: (url: string, title: string) => boolean;
+  onRemoveVideo: (id: string) => void;
+  videoRemainingSeconds: number;
+  onResetVideoTime: () => void;
   onUpdate: (patch: Partial<Settings>) => void;
   onAddTile: () => void;
   onEditTile: (tile: CustomTile) => void;
@@ -65,6 +70,11 @@ export function SettingsModal({
   onRemoveCategory,
   onAddPin,
   onRemovePin,
+  videos,
+  onAddVideo,
+  onRemoveVideo,
+  videoRemainingSeconds,
+  onResetVideoTime,
   onUpdate,
   onAddTile,
   onEditTile,
@@ -77,6 +87,9 @@ export function SettingsModal({
   const [newCatName, setNewCatName] = useState('');
   const [newCatEmoji, setNewCatEmoji] = useState('');
   const [pinPick, setPinPick] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
+  const [videoTitle, setVideoTitle] = useState('');
+  const [videoError, setVideoError] = useState('');
 
   const exportBackup = () => {
     const data: Record<string, unknown> = { customTiles };
@@ -378,6 +391,86 @@ export function SettingsModal({
               <p className="ft-hint">
                 The 🏠 Home tab shows pinned words plus the child's favourites and
                 custom tiles.
+              </p>
+            </section>
+
+            <section>
+              <h3>🎬 Reward videos ({videos.length})</h3>
+              <div className="custom-tile-list">
+                {videos.map((v) => (
+                  <div key={v.id} className="custom-tile-row">
+                    <span className="profile-row-avatar">🎬</span>
+                    <span className="custom-tile-name">{v.title}</span>
+                    <button
+                      className="btn-delete"
+                      onClick={() => onRemoveVideo(v.id)}
+                      aria-label={`Delete video ${v.title}`}
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div className="add-row">
+                <input
+                  className="text-field add-row-field"
+                  type="text"
+                  placeholder="YouTube link (youtube.com/watch?v=…)"
+                  value={videoUrl}
+                  onChange={(e) => {
+                    setVideoUrl(e.target.value);
+                    setVideoError('');
+                  }}
+                />
+                <input
+                  className="text-field add-row-field"
+                  type="text"
+                  placeholder="Name (e.g. ABC song)"
+                  value={videoTitle}
+                  maxLength={30}
+                  onChange={(e) => setVideoTitle(e.target.value)}
+                />
+                <button
+                  className="btn-secondary"
+                  onClick={() => {
+                    if (onAddVideo(videoUrl, videoTitle)) {
+                      setVideoUrl('');
+                      setVideoTitle('');
+                    } else {
+                      setVideoError('That does not look like a YouTube link.');
+                    }
+                  }}
+                >
+                  ➕ Add
+                </button>
+              </div>
+              {videoError && <p className="gate-error">{videoError}</p>}
+
+              <h3 style={{ marginTop: 14 }}>⏳ Daily video time</h3>
+              <input
+                type="range"
+                min="5"
+                max="60"
+                step="5"
+                value={settings.videoLimitMins}
+                onChange={(e) => onUpdate({ videoLimitMins: parseInt(e.target.value, 10) })}
+              />
+              <div className="range-labels">
+                <span>5 min</span>
+                <span>
+                  <strong>{settings.videoLimitMins} min/day</strong>
+                </span>
+                <span>60 min</span>
+              </div>
+              <p className="progress-line">
+                Left today: <strong>{Math.ceil(videoRemainingSeconds / 60)} min</strong>
+                <button
+                  className="btn-secondary"
+                  style={{ marginLeft: 10 }}
+                  onClick={onResetVideoTime}
+                >
+                  🔄 Reset today's time
+                </button>
               </p>
             </section>
 

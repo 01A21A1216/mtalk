@@ -21,7 +21,14 @@ Built as a hybrid app: **Vite + React + TypeScript** web core wrapped with **Cap
 - **Sentence history (🕘)** — the last 20 spoken sentences; tap one to say it again
 - **Scanning access mode** — for kids with motor impairments: tiles light up one at a time and a tap anywhere selects the highlighted one (enable in settings)
 - **Backup / restore** — export everything (settings, custom tiles with photos and voices, progress, usage) to a JSON file and restore it on another device (settings → Backup; works in browser/PWA)
-- **Child-locked settings** — press-and-hold the gear for 1.5 s, then answer a simple sum; caregivers can switch language, age mode, speech speed, label options, vibration, tile spacing, and scanning
+- **👨‍👩‍👧 Kid profiles** — "Who is talking today?" picker; every child gets isolated settings, tiles, progress, favourites, and home board
+- **🏠 Home tab** — each child's personal board: parent-pinned words + auto favourites + custom tiles
+- **📖 Stories & 🎵 Rhymes** — 16 read-aloud picture books (emoji scene per line, line highlighting, page arrows) in English + Hindi
+- **✍️ Write & Paint tab** — trace letters, numbers, shapes, symbols, animals, and cartoons, or free-paint with 7 colours
+- **🎬 Reward videos** — parents add YouTube links; kid-proof player (no controls, no seeking, can't reach YouTube) with a visual daily time budget, spoken one-minute warning, lock screen when time is up, and parent reset
+- **📁 Custom categories** — organise custom tiles into parent-created categories
+- **🔒 Kid lock** (installed app) — pins MTalk to the screen so the child can't leave; unlock via gated settings
+- **Child-locked settings** — tap the gear, answer a simple sum; caregivers manage kids, languages, age modes, speech, videos, home tiles, and more
 - **Fully offline** — no network needed; speech uses on-device voices
 
 ## Development

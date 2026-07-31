@@ -5,7 +5,7 @@ const STORAGE_KEY = 'mtalk-profiles';
 export const FIRST_PROFILE_ID = 'p1';
 
 /** Per-profile localStorage bases that get namespaced as `mtalk-<base>:<pid>` */
-const PROFILE_BASES = ['settings', 'mastery', 'usage', 'history', 'bigrams', 'cats', 'home'];
+const PROFILE_BASES = ['settings', 'mastery', 'usage', 'history', 'bigrams', 'cats', 'home', 'videos', 'videotime'];
 
 export const profileKey = (base: string, profileId: string) =>
   `mtalk-${base}:${profileId}`;

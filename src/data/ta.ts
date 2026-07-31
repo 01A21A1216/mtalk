@@ -471,4 +471,5 @@ export const TA_CATEGORIES: Record<string, string> = {
   art: 'கலை',
   stories: 'கதைகள்',
   rhymes: 'பாடல்கள்',
+  videos: 'வீடியோக்கள்',
 };

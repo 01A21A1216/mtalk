@@ -474,4 +474,5 @@ export const TE_CATEGORIES: Record<string, string> = {
   art: 'కళ',
   stories: 'కథలు',
   rhymes: 'పాటలు',
+  videos: 'వీడియోలు',
 };

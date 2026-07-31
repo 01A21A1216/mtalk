@@ -28,6 +28,8 @@ Priorities: **P1** = next up · **P2** = strong candidates · **P3** = later
 
 - v1.9 (web) — Stories & Rhymes picture-book player (16 titles, per-line emoji scenes, en+hi); multi-child **profiles** (picker screen, per-profile settings/tiles/progress/favorites, auto-migration of existing data); **custom categories** for tiles; **🏠 Home tab** (pinned words + favourites + custom tiles per child); Kid Lock (native, next APK); HTTPS server for tablet mic; Write tab trace categories in sidebar
 
+- v1.10 (web) — 🎬 YouTube reward videos (per-profile playlist with thumbnails, kid-proof shielded player with controls/keyboard/fullscreen disabled, daily minute budget with visual countdown + spoken 1-minute warning + lock screen, parent reset, auto daily reset); Write tab trace sets (letters/numbers/shapes/symbols/animals/cartoons) in left sidebar; tile layout hardened with container-relative sizing (no overflow at any screen/zoom)
+
 ## P3 — later
 - **Scanning speed setting + row/column scanning** — current scanning is linear at fixed 1.8 s
 - **Backup improvements** — in-APK file save needs a Capacitor Filesystem plugin (browser/PWA download works today)

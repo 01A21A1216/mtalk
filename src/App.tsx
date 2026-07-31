@@ -24,6 +24,9 @@ const WritePad = lazy(() =>
 const StoryPlayer = lazy(() =>
   import('./components/StoryPlayer').then((m) => ({ default: m.StoryPlayer })),
 );
+const VideoPlayer = lazy(() =>
+  import('./components/VideoPlayer').then((m) => ({ default: m.VideoPlayer })),
+);
 import { CATEGORIES, QUICK_WORDS } from './data/vocabulary';
 import { STORIES } from './data/stories';
 import { TRACE_SETS } from './data/traceSets';
@@ -37,6 +40,8 @@ import { useHistory } from './hooks/useHistory';
 import { useProfiles } from './hooks/useProfiles';
 import { useSettings } from './hooks/useSettings';
 import { useUsage } from './hooks/useUsage';
+import { useVideos, videoThumbnail } from './hooks/useVideos';
+import { useVideoTime } from './hooks/useVideoTime';
 import { playPop, playSequence, speakWord } from './services/speech';
 import type { Category, CustomTile, Profile, Word } from './types';
 
@@ -102,6 +107,7 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
   const { recordUse, topWordIds, usedThisWeek, newThisWeek } = useUsage(profile.id);
   const { history, addEntry } = useHistory(profile.id);
   const { recordPair, suggestNext } = useBigrams(profile.id);
+  const { videos, addVideo, removeVideo } = useVideos(profile.id);
   const [screen, setScreen] = useState<Screen>('home');
   const [activeCategoryId, setActiveCategoryId] = useState(CATEGORIES[0].id);
   const [sentence, setSentence] = useState<Word[]>([]);
@@ -114,6 +120,11 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
   const [celebrate, setCelebrate] = useState(false);
   const [writeSetId, setWriteSetId] = useState<string | null>('letters');
   const [activeStoryId, setActiveStoryId] = useState<string | null>(null);
+  const [activeVideo, setActiveVideo] = useState<{ videoId: string; title: string } | null>(null);
+  const { remainingSeconds, addSecond, resetToday } = useVideoTime(
+    profile.id,
+    settings.videoLimitMins,
+  );
 
   const tileToWord = (t: CustomTile): Word => ({
     id: t.id,
@@ -161,6 +172,30 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
     [customCategories, customTiles],
   );
 
+  // Parent-added YouTube reward videos become a 🎬 category in Talk
+  const videosCategory: Category | null = useMemo(() => {
+    if (videos.length === 0) return null;
+    return {
+      id: 'videos',
+      emoji: '🎬',
+      en: 'Videos',
+      hi: 'वीडियो',
+      color: '#FFEBEE',
+      colorDark: '#C62828',
+      level: 1,
+      group: 'talk',
+      words: videos.map((v) => ({
+        id: v.id,
+        emoji: '🎬',
+        en: v.title,
+        hi: v.title,
+        level: 1 as const,
+        image: videoThumbnail(v.videoId),
+        videoId: v.videoId,
+      })),
+    };
+  }, [videos]);
+
   // Index every word (built-in, quick bar, custom) by id for lookups
   const wordIndex = useMemo(() => {
     const index = new Map<string, Word>();
@@ -168,8 +203,9 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
     for (const w of QUICK_WORDS) index.set(w.id, w);
     for (const w of myWordsCategory?.words ?? []) index.set(w.id, w);
     for (const cat of customCategoryList) for (const w of cat.words) index.set(w.id, w);
+    for (const w of videosCategory?.words ?? []) index.set(w.id, w);
     return index;
-  }, [myWordsCategory, customCategoryList]);
+  }, [myWordsCategory, customCategoryList, videosCategory]);
 
   // Auto "Favourites": the child's most-tapped words become the first board
   const favoriteIds = topWordIds(12, 3);
@@ -194,16 +230,17 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
   }, [favoritesKey, wordIndex]);
 
   const allCategories = useMemo(() => {
-    const extras = [favoritesCategory, myWordsCategory, ...customCategoryList].filter(
+    const extras = [favoritesCategory, myWordsCategory, ...customCategoryList, videosCategory].filter(
       (c): c is Category => Boolean(c),
     );
     return [...extras, ...CATEGORIES];
-  }, [favoritesCategory, myWordsCategory, customCategoryList]);
+  }, [favoritesCategory, myWordsCategory, customCategoryList, videosCategory]);
 
   const groupCategories = allCategories.filter((c) => {
     if (c.level > settings.ageMode) return false;
     if (screen === 'quiz') {
-      // quiz can practise any category with enough visible words
+      // quiz can practise any category with enough visible words (not videos)
+      if (c.id === 'videos') return false;
       return c.words.filter((w) => w.level <= settings.ageMode).length >= 2;
     }
     if (screen === 'home' || screen === 'write') return false;
@@ -257,6 +294,12 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
         // story/rhyme tiles open the read-aloud player
         recordUse(word.id);
         setActiveStoryId(word.storyId);
+        return;
+      }
+      if (word.videoId) {
+        // video tiles open the timed player (which locks when time is up)
+        recordUse(word.id);
+        setActiveVideo({ videoId: word.videoId, title: word.en });
         return;
       }
       recordUse(word.id);
@@ -578,6 +621,11 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
             .filter((w): w is Word => Boolean(w))}
           onAddPin={addPin}
           onRemovePin={removePin}
+          videos={videos}
+          onAddVideo={addVideo}
+          onRemoveVideo={removeVideo}
+          videoRemainingSeconds={remainingSeconds}
+          onResetVideoTime={resetToday}
           customTiles={customTiles}
           masteredCount={masteredCount}
           practicedCount={practicedCount}
@@ -623,6 +671,18 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
           />
         ) : null;
       })()}
+
+      {activeVideo && (
+        <VideoPlayer
+          videoId={activeVideo.videoId}
+          title={activeVideo.title}
+          remainingSeconds={remainingSeconds}
+          limitSeconds={settings.videoLimitMins * 60}
+          language={settings.language}
+          onTick={addSecond}
+          onClose={() => setActiveVideo(null)}
+        />
+      )}
 
       {historyOpen && (
         <HistoryModal

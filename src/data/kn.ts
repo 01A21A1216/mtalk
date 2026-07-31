@@ -471,4 +471,5 @@ export const KN_CATEGORIES: Record<string, string> = {
   art: 'ಕಲೆ',
   stories: 'ಕಥೆಗಳು',
   rhymes: 'ಹಾಡುಗಳು',
+  videos: 'ವಿಡಿಯೋಗಳು',
 };

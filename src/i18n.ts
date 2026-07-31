@@ -55,6 +55,8 @@ interface UiStrings {
   notEnoughWords: string;
   first: string;
   then: string;
+  videoWarn: string;
+  videoOver: string;
 }
 
 export const UI: Record<Language, UiStrings> = {
@@ -72,6 +74,8 @@ export const UI: Record<Language, UiStrings> = {
     notEnoughWords: 'Not enough words in this category to practise. Pick another one!',
     first: 'First',
     then: 'Then',
+    videoWarn: 'One minute left!',
+    videoOver: 'Video time is over for today!',
   },
   hi: {
     tagline: 'मेरी आवाज़',
@@ -87,6 +91,8 @@ export const UI: Record<Language, UiStrings> = {
     notEnoughWords: 'इस श्रेणी में अभ्यास के लिए पर्याप्त शब्द नहीं हैं।',
     first: 'पहले',
     then: 'फिर',
+    videoWarn: 'एक मिनट बचा है!',
+    videoOver: 'आज के लिए वीडियो का समय खत्म!',
   },
   te: {
     tagline: 'నా గొంతు',
@@ -102,6 +108,8 @@ export const UI: Record<Language, UiStrings> = {
     notEnoughWords: 'ఈ విభాగంలో సాధన చేయడానికి సరిపడా పదాలు లేవు.',
     first: 'ముందు',
     then: 'తర్వాత',
+    videoWarn: 'ఒక నిమిషం మిగిలింది!',
+    videoOver: 'ఈరోజుకి వీడియో సమయం అయిపోయింది!',
   },
   ta: {
     tagline: 'என் குரல்',
@@ -117,6 +125,8 @@ export const UI: Record<Language, UiStrings> = {
     notEnoughWords: 'இந்தப் பிரிவில் பயிற்சிக்கு போதுமான சொற்கள் இல்லை.',
     first: 'முதலில்',
     then: 'பிறகு',
+    videoWarn: 'ஒரு நிமிடம் மீதம்!',
+    videoOver: 'இன்றைக்கு வீடியோ நேரம் முடிந்தது!',
   },
   kn: {
     tagline: 'ನನ್ನ ಧ್ವನಿ',
@@ -132,5 +142,7 @@ export const UI: Record<Language, UiStrings> = {
     notEnoughWords: 'ಈ ವಿಭಾಗದಲ್ಲಿ ಅಭ್ಯಾಸಕ್ಕೆ ಸಾಕಷ್ಟು ಪದಗಳಿಲ್ಲ.',
     first: 'ಮೊದಲು',
     then: 'ಆಮೇಲೆ',
+    videoWarn: 'ಇನ್ನು ಒಂದು ನಿಮಿಷ!',
+    videoOver: 'ಇವತ್ತಿಗೆ ವಿಡಿಯೋ ಸಮಯ ಮುಗಿಯಿತು!',
   },
 };

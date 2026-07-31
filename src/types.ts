@@ -19,6 +19,16 @@ export interface Word {
   audio?: string;
   /** Tapping this tile opens the story player instead of speaking a word */
   storyId?: string;
+  /** Tapping this tile opens the timed YouTube player */
+  videoId?: string;
+}
+
+/** A parent-added YouTube reward video */
+export interface VideoTile {
+  id: string;
+  title: string;
+  videoId: string;
+  createdAt: number;
 }
 
 /** A parent-created tile persisted in IndexedDB */
@@ -92,6 +102,8 @@ export interface Settings {
   /** First–Then visual schedule: word ids chosen by the caregiver */
   firstThenFirst: string | null;
   firstThenThen: string | null;
+  /** Daily YouTube watching budget in minutes */
+  videoLimitMins: number;
 }
 
 /** One spoken sentence, kept in the replay history */

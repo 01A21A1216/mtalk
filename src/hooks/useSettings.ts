@@ -13,6 +13,7 @@ const DEFAULT_SETTINGS: Settings = {
   scanning: false,
   firstThenFirst: null,
   firstThenThen: null,
+  videoLimitMins: 10,
 };
 
 function loadSettings(key: string): Settings {
