@@ -1709,6 +1709,82 @@ button {
   box-shadow: 0 16px 50px rgba(0, 0, 0, 0.3);
 }
 
+/* Settings opens as a full-screen page — it has too many sections for a box */
+.modal-backdrop-full {
+  padding: 0;
+  background: rgba(40, 20, 70, 0.6);
+}
+
+.modal-full {
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  border-radius: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.modal-full .settings {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  /* only the middle scrolls; header and footer stay put */
+  overflow: hidden;
+}
+
+.settings-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 22px;
+  border-bottom: 3px solid #ede7f6;
+  flex-shrink: 0;
+}
+
+.settings-bar h2 {
+  margin: 0;
+}
+
+.settings-close {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  background: #f3eafe;
+  color: #4a2f7a;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.settings-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 22px 8px;
+  /* comfortable reading width on big tablets, full width on phones */
+  width: 100%;
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+.settings-foot {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 22px;
+  border-top: 3px solid #ede7f6;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.settings-foot .version-line {
+  margin: 0;
+}
+
 .modal h2 {
   margin-bottom: 14px;
   color: #4a2f7a;
@@ -2057,6 +2133,71 @@ button {
 
   .age-options {
     flex-direction: column;
+  }
+
+  /* full-screen settings on phones: tighter bars, stacked controls */
+  .modal-full {
+    padding: 0;
+    border-radius: 0;
+  }
+
+  .settings-bar {
+    padding: 12px 14px;
+  }
+
+  .settings-bar h2 {
+    font-size: 1.2rem;
+  }
+
+  .settings-body {
+    padding: 16px 14px 8px;
+  }
+
+  .settings-foot {
+    padding: 10px 14px;
+  }
+
+  .settings-foot .version-line {
+    font-size: 0.7rem;
+  }
+
+  /* long parent forms stack instead of squeezing side by side */
+  .add-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .add-row-field,
+  .add-row-emoji {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .add-row button {
+    width: 100%;
+  }
+
+  .ft-selects {
+    flex-direction: column;
+  }
+
+  .ft-selects select {
+    width: 100%;
+  }
+
+  .segmented button {
+    min-width: 0;
+    flex: 1 1 40%;
+    font-size: 0.95rem;
+    padding: 10px 6px;
+  }
+
+  .custom-tile-list {
+    max-height: 40vh;
+  }
+
+  .record-row {
+    flex-wrap: wrap;
   }
 }
 

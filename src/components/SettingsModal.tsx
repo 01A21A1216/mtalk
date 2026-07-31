@@ -179,8 +179,14 @@ export function SettingsModal({
   };
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+    <div
+      className={`modal-backdrop ${unlocked ? 'modal-backdrop-full' : ''}`}
+      onClick={unlocked ? undefined : onClose}
+    >
+      <div
+        className={`modal ${unlocked ? 'modal-full' : ''}`}
+        onClick={(e) => e.stopPropagation()}
+      >
         {!unlocked ? (
           <div className="gate">
             <h2>👨‍👩‍👧 For grown-ups</h2>
@@ -210,8 +216,14 @@ export function SettingsModal({
           </div>
         ) : (
           <div className="settings">
-            <h2>⚙️ Settings</h2>
+            <header className="settings-bar">
+              <h2>⚙️ Settings</h2>
+              <button className="settings-close" onClick={onClose} aria-label="Close settings">
+                ✖
+              </button>
+            </header>
 
+            <div className="settings-body">
             <section>
               <h3>Language / भाषा / భాష</h3>
               <div className="segmented">
@@ -903,13 +915,14 @@ export function SettingsModal({
               </div>
               {backupMessage && <p className="progress-line">{backupMessage}</p>}
             </section>
+            </div>
 
-            <div className="modal-actions">
+            <footer className="settings-foot">
+              <p className="version-line">MTalk v{APP_VERSION}</p>
               <button className="btn-primary" onClick={onClose}>
                 Done ✅
               </button>
-            </div>
-            <p className="version-line">MTalk v{APP_VERSION}</p>
+            </footer>
           </div>
         )}
       </div>
