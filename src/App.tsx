@@ -313,6 +313,9 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
   // choice mode narrows the board to two options the parent picked
   const displayWords = choiceMode && choicePicks.length > 0 ? choicePicks : baseWords;
 
+  // when the caregiver wants words echoed in the home language
+  const echoLang = settings.speakMotherTongue ? settings.motherTongue : null;
+
   const triggerCelebration = () => {
     setCelebrate(true);
     window.setTimeout(() => setCelebrate(false), 1600);
@@ -346,14 +349,14 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
       if (settings.speakOnTap) {
         // fun sound first (moo! / horn), then the word itself
         void playWordSfx(word.id, settings.language, settings.speechRate).then(() =>
-          speakWord(word, settings.language, settings.speechRate),
+          speakWord(word, settings.language, settings.speechRate, echoLang),
         );
       }
       setSentence((prev) =>
         prev.length >= MAX_SENTENCE_WORDS ? prev : [...prev, word],
       );
     },
-    [settings.vibrateOnTap, settings.speakOnTap, settings.language, settings.speechRate, recordUse, recordPair],
+    [settings.vibrateOnTap, settings.speakOnTap, settings.language, settings.speechRate, echoLang, recordUse, recordPair],
   );
 
   const buzz = () => {
@@ -364,7 +367,7 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
     playPop();
     buzz();
     recordUse(word.id);
-    speakWord(word, settings.language, settings.speechRate);
+    speakWord(word, settings.language, settings.speechRate, echoLang);
   };
 
   const playSentence = () => {
@@ -668,6 +671,7 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
                 key={word.id}
                 word={word}
                 language={settings.language}
+                motherTongue={settings.motherTongue}
                 showBoth={settings.showBothLanguages}
                 color={activeCategory?.color ?? '#FFF8E1'}
                 colorDark={activeCategory?.colorDark ?? '#FF8F00'}

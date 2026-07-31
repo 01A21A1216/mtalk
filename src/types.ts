@@ -102,7 +102,12 @@ export interface Category {
 }
 
 export interface Settings {
+  /** App language: the big label on every tile and all UI text */
   language: Language;
+  /** Home language shown as the small caption under each tile label */
+  motherTongue: Language | null;
+  /** Also speak the word in the mother tongue after the app language */
+  speakMotherTongue: boolean;
   ageMode: AgeMode;
   speechRate: number;
   /** Show the small second-language caption under each label */

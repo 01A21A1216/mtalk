@@ -86,10 +86,22 @@ export function wordText(word: Word, language: Language): string {
   return wordSpeech(word, language);
 }
 
-export function speakWord(word: Word, language: Language, rate?: number) {
+export function speakWord(
+  word: Word,
+  language: Language,
+  rate?: number,
+  motherTongue?: Language | null,
+) {
   if (word.audio) {
     window.speechSynthesis?.cancel();
     void playAudioAsync(word.audio);
+    return;
+  }
+  // optionally echo the word in the family's language right after
+  if (motherTongue && motherTongue !== language) {
+    void speakAsync(wordText(word, language), language, rate).then(() =>
+      speak(wordText(word, motherTongue), motherTongue, rate),
+    );
     return;
   }
   speak(wordText(word, language), language, rate);

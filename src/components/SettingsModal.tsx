@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { wordLabel } from '../i18n';
+import { LANGUAGE_NAMES, LANGUAGE_ORDER, wordLabel } from '../i18n';
 import { putTile } from '../services/db';
 import { kidLockAvailable, lockApp, unlockApp } from '../services/kidlock';
 import { APP_VERSION } from '../version';
@@ -52,6 +52,15 @@ interface SettingsModalProps {
   onRemoveTile: (id: string) => void;
   onClose: () => void;
 }
+
+/** "Water" — used to preview how tiles will look in both languages */
+const WATER_SAMPLE: Word = {
+  id: 'water',
+  emoji: '💧',
+  en: 'Water',
+  hi: 'पानी',
+  level: 1,
+};
 
 const AGE_MODES: { value: AgeMode; en: string; hint: string }[] = [
   { value: 1, en: '🐣 Little', hint: '1–4 yrs · few big tiles' },
@@ -225,39 +234,68 @@ export function SettingsModal({
 
             <div className="settings-body">
             <section>
-              <h3>Language / भाषा / భాష</h3>
+              <h3>App language / भाषा / భాష</h3>
+              <p className="ft-hint">
+                The big label on every tile, and all app text.
+              </p>
+              <div className="segmented">
+                {LANGUAGE_ORDER.map((lang) => (
+                  <button
+                    key={lang}
+                    className={settings.language === lang ? 'seg-active' : ''}
+                    onClick={() => onUpdate({ language: lang })}
+                  >
+                    {LANGUAGE_NAMES[lang]}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section>
+              <h3>🏡 Mother tongue</h3>
+              <p className="ft-hint">
+                The language spoken at home. It appears as a small caption under
+                each tile, so the child sees both — helpful when school or
+                therapy uses a different language.
+              </p>
               <div className="segmented">
                 <button
-                  className={settings.language === 'en' ? 'seg-active' : ''}
-                  onClick={() => onUpdate({ language: 'en' })}
+                  className={!settings.motherTongue ? 'seg-active' : ''}
+                  onClick={() => onUpdate({ motherTongue: null })}
                 >
-                  English
+                  None
                 </button>
-                <button
-                  className={settings.language === 'hi' ? 'seg-active' : ''}
-                  onClick={() => onUpdate({ language: 'hi' })}
-                >
-                  हिन्दी
-                </button>
-                <button
-                  className={settings.language === 'te' ? 'seg-active' : ''}
-                  onClick={() => onUpdate({ language: 'te' })}
-                >
-                  తెలుగు
-                </button>
-                <button
-                  className={settings.language === 'ta' ? 'seg-active' : ''}
-                  onClick={() => onUpdate({ language: 'ta' })}
-                >
-                  தமிழ்
-                </button>
-                <button
-                  className={settings.language === 'kn' ? 'seg-active' : ''}
-                  onClick={() => onUpdate({ language: 'kn' })}
-                >
-                  ಕನ್ನಡ
-                </button>
+                {LANGUAGE_ORDER.filter((l) => l !== settings.language).map((lang) => (
+                  <button
+                    key={lang}
+                    className={settings.motherTongue === lang ? 'seg-active' : ''}
+                    onClick={() => onUpdate({ motherTongue: lang })}
+                  >
+                    {LANGUAGE_NAMES[lang]}
+                  </button>
+                ))}
               </div>
+              {settings.motherTongue && settings.motherTongue !== settings.language && (
+                <>
+                  <div className="mt-preview" aria-hidden="true">
+                    <span className="mt-preview-emoji">💧</span>
+                    <span className="mt-preview-main">
+                      {wordLabel(WATER_SAMPLE, settings.language)}
+                    </span>
+                    <span className="mt-preview-sub">
+                      {wordLabel(WATER_SAMPLE, settings.motherTongue)}
+                    </span>
+                  </div>
+                  <label className="mt-toggle">
+                    <input
+                      type="checkbox"
+                      checked={settings.speakMotherTongue}
+                      onChange={(e) => onUpdate({ speakMotherTongue: e.target.checked })}
+                    />
+                    Also say each word in {LANGUAGE_NAMES[settings.motherTongue]}
+                  </label>
+                </>
+              )}
             </section>
 
             <section>
@@ -626,7 +664,7 @@ export function SettingsModal({
                   checked={settings.showBothLanguages}
                   onChange={(e) => onUpdate({ showBothLanguages: e.target.checked })}
                 />
-                Show both languages on tiles
+                Show the mother-tongue caption on tiles
               </label>
               <label>
                 <input

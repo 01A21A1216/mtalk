@@ -1849,6 +1849,54 @@ button {
   color: #fff;
 }
 
+/* live preview of how a tile reads in both languages */
+.mt-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-top: 12px;
+  padding: 12px 18px;
+  border-radius: 18px;
+  background: #fffdf5;
+  border: 3px solid #ffd54f;
+  align-self: flex-start;
+  width: fit-content;
+}
+
+.mt-preview-emoji {
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.mt-preview-main {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #4a2f7a;
+}
+
+.mt-preview-sub {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #00000073;
+}
+
+.mt-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #4a3f60;
+}
+
+.mt-toggle input[type='checkbox'] {
+  width: 22px;
+  height: 22px;
+  accent-color: #6a1b9a;
+}
+
 .age-options {
   display: flex;
   gap: 8px;

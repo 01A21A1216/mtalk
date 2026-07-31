@@ -4,6 +4,8 @@ import type { Settings } from '../types';
 
 const DEFAULT_SETTINGS: Settings = {
   language: 'en',
+  motherTongue: 'hi',
+  speakMotherTongue: false,
   ageMode: 2,
   speechRate: 0.85,
   showBothLanguages: true,

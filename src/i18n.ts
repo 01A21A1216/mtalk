@@ -30,10 +30,32 @@ export function wordSpeech(word: Word, language: Language): string {
   return EXTRA_LANGS[language]?.words[word.id] ?? (word.speakEn ?? word.en);
 }
 
-/** Small caption under the main label — always a different script than primary */
-export function wordSecondary(word: Word, language: Language): string {
-  return language === 'en' ? word.hi : word.en;
+/**
+ * Small caption under the main label: the family's mother tongue, so a child
+ * learning in English still sees the word at home in తెలుగు / हिन्दी / …
+ * Falls back to the old behaviour when no mother tongue is set.
+ */
+export function wordSecondary(
+  word: Word,
+  language: Language,
+  motherTongue?: Language | null,
+): string {
+  // null = caregiver chose "None"; undefined = caller didn't set one yet
+  if (motherTongue === null) return '';
+  const mt = motherTongue ?? (language === 'en' ? 'hi' : 'en');
+  if (mt === language) return '';
+  return wordLabel(word, mt);
 }
+
+export const LANGUAGE_NAMES: Record<Language, string> = {
+  en: 'English',
+  hi: 'हिन्दी',
+  te: 'తెలుగు',
+  ta: 'தமிழ்',
+  kn: 'ಕನ್ನಡ',
+};
+
+export const LANGUAGE_ORDER: Language[] = ['en', 'hi', 'te', 'ta', 'kn'];
 
 export function categoryLabel(category: Category, language: Language): string {
   if (language === 'en') return category.en;

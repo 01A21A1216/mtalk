@@ -5,6 +5,8 @@ import type { Language, Word } from '../types';
 interface TileProps {
   word: Word;
   language: Language;
+  /** Home language for the small caption under the label */
+  motherTongue?: Language | null;
   showBoth: boolean;
   color: string;
   colorDark: string;
@@ -14,11 +16,11 @@ interface TileProps {
 }
 
 /** Memoized: the grid can hold 100 tiles and must not re-render per tap */
-export const Tile = memo(function Tile({ word, language, showBoth, color, colorDark, scanned, onTap }: TileProps) {
+export const Tile = memo(function Tile({ word, language, motherTongue, showBoth, color, colorDark, scanned, onTap }: TileProps) {
   const [bouncing, setBouncing] = useState(false);
 
   const primary = wordLabel(word, language);
-  const secondary = wordSecondary(word, language);
+  const secondary = wordSecondary(word, language, motherTongue);
 
   const handleTap = () => {
     setBouncing(true);
