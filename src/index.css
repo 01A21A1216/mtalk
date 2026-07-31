@@ -505,17 +505,21 @@ button {
   align-content: start;
 }
 
-/* Little: enormous tiles, Junior: large, Senior: medium */
+/* Little: enormous tiles, Junior: large, Senior: medium.
+   Fixed row heights + fixed font sizes = identical rendering in every engine. */
 .tile-grid-age-1 {
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-auto-rows: 172px;
 }
 
 .tile-grid-age-2 {
   grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
+  grid-auto-rows: 130px;
 }
 
 .tile-grid-age-3 {
   grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  grid-auto-rows: 114px;
 }
 
 .tile {
@@ -523,8 +527,8 @@ button {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2cqw;
-  aspect-ratio: 1 / 0.92;
+  gap: 4px;
+  height: 100%;
   border-radius: 24px;
   border: 4px solid;
   box-shadow: 0 5px 0 rgba(0, 0, 0, 0.12);
@@ -532,9 +536,6 @@ button {
   padding: 6px;
   overflow: hidden;
   min-width: 0;
-  /* children size themselves against the tile WIDTH (inline-size containment
-     is grid-safe; size containment collapses grid rows in some engines) */
-  container-type: inline-size;
 }
 
 .tile:active {
@@ -562,16 +563,13 @@ button {
 }
 
 .tile-emoji {
-  /* fallback for old browsers, then container-relative sizing */
-  font-size: clamp(1.8rem, 3.4vw, 2.8rem);
-  font-size: 33cqw;
+  font-size: 44px;
   line-height: 1;
   filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.12));
 }
 
 .tile-label {
-  font-size: clamp(0.85rem, 1.8vw, 1.2rem);
-  font-size: clamp(0.7rem, 11.5cqw, 1.35rem);
+  font-size: 16px;
   font-weight: 800;
   text-align: center;
   line-height: 1.15;
@@ -585,8 +583,7 @@ button {
 }
 
 .tile-sublabel {
-  font-size: clamp(0.65rem, 1.3vw, 0.85rem);
-  font-size: clamp(0.6rem, 8.5cqw, 0.95rem);
+  font-size: 12px;
   font-weight: 600;
   color: #00000073;
   text-align: center;
@@ -597,14 +594,39 @@ button {
   flex-shrink: 0;
 }
 
-/* age-1 tiles are physically bigger, so container-relative sizes scale up
-   automatically — no per-age font overrides needed */
+.tile-grid-age-1 .tile-emoji {
+  font-size: 64px;
+}
+
+.tile-grid-age-1 .tile-label {
+  font-size: 20px;
+}
+
+.tile-grid-age-1 .tile-image {
+  width: 78px;
+  height: 78px;
+}
+
+.tile-grid-age-3 .tile-emoji {
+  font-size: 36px;
+}
+
+.tile-grid-age-3 .tile-label {
+  font-size: 14px;
+}
+
+.tile-grid-age-3 .tile-sublabel {
+  font-size: 11px;
+}
+
+.tile-grid-age-3 .tile-image {
+  width: 44px;
+  height: 44px;
+}
 
 .tile-image {
-  width: clamp(44px, 6vw, 76px);
-  height: clamp(44px, 6vw, 76px);
-  width: 38cqw;
-  height: 38cqw;
+  width: 52px;
+  height: 52px;
   object-fit: cover;
   border-radius: 14px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18);
@@ -1389,6 +1411,17 @@ button {
   user-select: none;
 }
 
+.story-scene-photo {
+  padding: 0;
+  overflow: hidden;
+}
+
+.story-scene-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
 .story-current-line {
   min-height: 3.2em;
   display: grid;
@@ -1666,14 +1699,37 @@ button {
 
   .tile-grid-age-1 {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-auto-rows: 148px;
   }
 
   .tile-grid-age-2 {
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    grid-auto-rows: 118px;
   }
 
   .tile-grid-age-3 {
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    grid-auto-rows: 104px;
+  }
+
+  .tile-grid-age-1 .tile-emoji {
+    font-size: 54px;
+  }
+
+  .tile-emoji {
+    font-size: 38px;
+  }
+
+  .tile-grid-age-3 .tile-emoji {
+    font-size: 32px;
+  }
+
+  .tile-label {
+    font-size: 14px;
+  }
+
+  .tile-sublabel {
+    font-size: 11px;
   }
 }
 
@@ -1769,14 +1825,42 @@ button {
 
   .tile-grid-age-1 {
     grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: 150px;
   }
 
   .tile-grid-age-2 {
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    grid-auto-rows: 102px;
   }
 
   .tile-grid-age-3 {
     grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+    grid-auto-rows: 94px;
+  }
+
+  .tile-grid-age-1 .tile-emoji {
+    font-size: 50px;
+  }
+
+  .tile-emoji {
+    font-size: 30px;
+  }
+
+  .tile-grid-age-3 .tile-emoji {
+    font-size: 26px;
+  }
+
+  .tile-label {
+    font-size: 12px;
+  }
+
+  .tile-sublabel {
+    font-size: 10px;
+  }
+
+  .tile-image {
+    width: 40px;
+    height: 40px;
   }
 
   .modal {
@@ -1858,17 +1942,24 @@ button {
   }
 
   .tile {
-    aspect-ratio: auto;
-    min-height: 96px;
     gap: 2px;
   }
 
-  .tile-emoji {
-    font-size: 2rem;
+  .tile-grid-age-1,
+  .tile-grid-age-2,
+  .tile-grid-age-3 {
+    grid-auto-rows: 96px;
   }
 
-  .tile-grid-age-1 .tile-emoji {
-    font-size: 2.6rem;
+  .tile-emoji,
+  .tile-grid-age-1 .tile-emoji,
+  .tile-grid-age-3 .tile-emoji {
+    font-size: 30px;
+  }
+
+  .tile-label,
+  .tile-grid-age-1 .tile-label {
+    font-size: 12px;
   }
 
   .tile-sublabel {

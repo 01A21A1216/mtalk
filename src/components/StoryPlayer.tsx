@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Story } from '../data/stories';
-import { playPop, speakAsync } from '../services/speech';
+import { playAudioAsync, playPop, speakAsync } from '../services/speech';
 import type { Language } from '../types';
 
 interface StoryPlayerProps {
@@ -31,13 +31,19 @@ export function StoryPlayer({ story, language, rate, onClose }: StoryPlayerProps
     setPlaying(false);
   };
 
+  const sayPage = async (i: number) => {
+    const recorded = story.audios?.[i];
+    if (recorded) await playAudioAsync(recorded);
+    else await speakAsync(lines[i], speechLang, rate);
+  };
+
   const playFrom = async (start: number) => {
     cancelledRef.current = false;
     setPlaying(true);
     for (let i = start; i < lines.length; i++) {
       if (cancelledRef.current) return;
       setPage(i);
-      await speakAsync(lines[i], speechLang, rate);
+      await sayPage(i);
     }
     if (!cancelledRef.current) setPlaying(false);
   };
@@ -47,9 +53,9 @@ export function StoryPlayer({ story, language, rate, onClose }: StoryPlayerProps
     const clamped = Math.max(0, Math.min(lines.length - 1, next));
     playPop();
     setPage(clamped);
-    // speak just this page so browsing is still read aloud
+    // read just this page so browsing is still narrated
     cancelledRef.current = false;
-    void speakAsync(lines[clamped], speechLang, rate);
+    void sayPage(clamped);
   };
 
   // start reading automatically when opened; stop cleanly when closed
@@ -75,9 +81,15 @@ export function StoryPlayer({ story, language, rate, onClose }: StoryPlayerProps
           <span aria-hidden="true">{story.emoji}</span> {title}
         </h2>
 
-        <div className="story-scene" key={page} aria-hidden="true">
-          {story.art[page] ?? story.emoji}
-        </div>
+        {story.images?.[page] ? (
+          <div className="story-scene story-scene-photo" key={`img-${page}`} aria-hidden="true">
+            <img src={story.images[page]!} alt="" className="story-scene-img" />
+          </div>
+        ) : (
+          <div className="story-scene" key={page} aria-hidden="true">
+            {story.art[page] ?? story.emoji}
+          </div>
+        )}
 
         <p className="story-current-line">{lines[page]}</p>
 

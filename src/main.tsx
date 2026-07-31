@@ -15,7 +15,7 @@ createRoot(document.getElementById('root')!).render(
 // Offline support: only in production builds so dev HMR stays fresh
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {
       // offline caching is best-effort
     });
   });

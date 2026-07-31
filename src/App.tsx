@@ -27,11 +27,15 @@ const StoryPlayer = lazy(() =>
 const VideoPlayer = lazy(() =>
   import('./components/VideoPlayer').then((m) => ({ default: m.VideoPlayer })),
 );
+const StoryEditor = lazy(() =>
+  import('./components/StoryEditor').then((m) => ({ default: m.StoryEditor })),
+);
 import { CATEGORIES, QUICK_WORDS } from './data/vocabulary';
 import { STORIES } from './data/stories';
 import { TRACE_SETS } from './data/traceSets';
 import { UI, wordLabel } from './i18n';
 import { useCustomCategories } from './hooks/useCustomCategories';
+import { useCustomStories } from './hooks/useCustomStories';
 import { useCustomTiles } from './hooks/useCustomTiles';
 import { useHome } from './hooks/useHome';
 import { useMastery } from './hooks/useMastery';
@@ -42,6 +46,7 @@ import { useSettings } from './hooks/useSettings';
 import { useUsage } from './hooks/useUsage';
 import { useVideos, videoThumbnail } from './hooks/useVideos';
 import { useVideoTime } from './hooks/useVideoTime';
+import { shareSentenceCard } from './services/shareCard';
 import { playPop, playSequence, speakWord } from './services/speech';
 import type { Category, CustomTile, Profile, Word } from './types';
 
@@ -108,6 +113,8 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
   const { history, addEntry } = useHistory(profile.id);
   const { recordPair, suggestNext } = useBigrams(profile.id);
   const { videos, addVideo, removeVideo } = useVideos(profile.id);
+  const { stories: customStories, addStory, removeStory } = useCustomStories(profile.id);
+  const [storyEditorOpen, setStoryEditorOpen] = useState(false);
   const [screen, setScreen] = useState<Screen>('home');
   const [activeCategoryId, setActiveCategoryId] = useState(CATEGORIES[0].id);
   const [sentence, setSentence] = useState<Word[]>([]);
@@ -233,8 +240,28 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
     const extras = [favoritesCategory, myWordsCategory, ...customCategoryList, videosCategory].filter(
       (c): c is Category => Boolean(c),
     );
-    return [...extras, ...CATEGORIES];
-  }, [favoritesCategory, myWordsCategory, customCategoryList, videosCategory]);
+    // parent-made social stories join the built-in Stories category
+    const base = CATEGORIES.map((c) =>
+      c.id === 'stories' && customStories.length > 0
+        ? {
+            ...c,
+            words: [
+              ...c.words,
+              ...customStories.map((s) => ({
+                id: `story-${s.id}`,
+                emoji: '📖',
+                en: s.title,
+                hi: s.title,
+                level: 1 as const,
+                image: s.pages[0]?.image,
+                storyId: `custom:${s.id}`,
+              })),
+            ],
+          }
+        : c,
+    );
+    return [...extras, ...base];
+  }, [favoritesCategory, myWordsCategory, customCategoryList, videosCategory, customStories]);
 
   const groupCategories = allCategories.filter((c) => {
     if (c.level > settings.ageMode) return false;
@@ -454,6 +481,10 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
             }
             onClear={() => setSentence([])}
             onHistory={() => setHistoryOpen(true)}
+            onShare={() => {
+              playPop();
+              void shareSentenceCard(sentence, settings.language);
+            }}
           />
 
           {suggestionWords.length > 0 && (
@@ -624,6 +655,9 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
           videos={videos}
           onAddVideo={addVideo}
           onRemoveVideo={removeVideo}
+          customStories={customStories}
+          onAddStory={() => setStoryEditorOpen(true)}
+          onRemoveStory={(id) => void removeStory(id)}
           videoRemainingSeconds={remainingSeconds}
           onResetVideoTime={resetToday}
           customTiles={customTiles}
@@ -661,7 +695,22 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
       )}
 
       {activeStoryId && (() => {
-        const story = STORIES.find((s) => s.id === activeStoryId);
+        let story = STORIES.find((s) => s.id === activeStoryId);
+        if (!story && activeStoryId.startsWith('custom:')) {
+          const cs = customStories.find((s) => `custom:${s.id}` === activeStoryId);
+          if (cs) {
+            story = {
+              id: cs.id,
+              emoji: '📖',
+              kind: 'story',
+              title: { en: cs.title },
+              lines: { en: cs.pages.map((p) => p.caption) },
+              art: cs.pages.map(() => '📖'),
+              images: cs.pages.map((p) => p.image),
+              audios: cs.pages.map((p) => p.audio ?? null),
+            };
+          }
+        }
         return story ? (
           <StoryPlayer
             story={story}
@@ -671,6 +720,10 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
           />
         ) : null;
       })()}
+
+      {storyEditorOpen && (
+        <StoryEditor onSave={addStory} onClose={() => setStoryEditorOpen(false)} />
+      )}
 
       {activeVideo && (
         <VideoPlayer

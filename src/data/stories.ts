@@ -14,6 +14,10 @@ export interface Story {
   lines: { en: string[]; hi?: string[] };
   /** one emoji scene per line */
   art: string[];
+  /** photo pages (parent-made social stories) — shown instead of emoji art */
+  images?: (string | null)[];
+  /** recorded narration per page — played instead of TTS when present */
+  audios?: (string | null)[];
 }
 
 export const STORIES: Story[] = [

@@ -7,8 +7,12 @@ import basicSsl from '@vitejs/plugin-basic-ssl'
 // service workers in mobile browsers.
 const useHttps = !!process.env.MTALK_HTTPS
 
+// MTALK_PAGES=1 builds for GitHub Pages (served under /mtalk/)
+const base = process.env.MTALK_PAGES ? '/mtalk/' : '/'
+
 // https://vite.dev/config/
 export default defineConfig({
+  base,
   plugins: [react(), ...(useHttps ? [basicSsl()] : [])],
   // Listen on all interfaces so tablets on the same WiFi can connect
   server: {

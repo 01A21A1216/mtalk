@@ -4,7 +4,7 @@ import { putTile } from '../services/db';
 import { kidLockAvailable, lockApp, unlockApp } from '../services/kidlock';
 import { APP_VERSION } from '../version';
 import { profileKey } from '../hooks/useProfiles';
-import type { AgeMode, CustomCategory, CustomTile, Profile, Settings, VideoTile, Word } from '../types';
+import type { AgeMode, CustomCategory, CustomStory, CustomTile, Profile, Settings, VideoTile, Word } from '../types';
 
 const BACKUP_BASES = ['settings', 'mastery', 'usage', 'history', 'bigrams', 'cats', 'home'];
 
@@ -33,6 +33,9 @@ interface SettingsModalProps {
   onRemoveVideo: (id: string) => void;
   videoRemainingSeconds: number;
   onResetVideoTime: () => void;
+  customStories: CustomStory[];
+  onAddStory: () => void;
+  onRemoveStory: (id: string) => void;
   onUpdate: (patch: Partial<Settings>) => void;
   onAddTile: () => void;
   onEditTile: (tile: CustomTile) => void;
@@ -75,6 +78,9 @@ export function SettingsModal({
   onRemoveVideo,
   videoRemainingSeconds,
   onResetVideoTime,
+  customStories,
+  onAddStory,
+  onRemoveStory,
   onUpdate,
   onAddTile,
   onEditTile,
@@ -392,6 +398,35 @@ export function SettingsModal({
                 The 🏠 Home tab shows pinned words plus the child's favourites and
                 custom tiles.
               </p>
+            </section>
+
+            <section>
+              <h3>📖 My stories ({customStories.length})</h3>
+              <p className="ft-hint">
+                Make picture stories about the child's own life — "Going to
+                school", "Haircut day" — with photos, a line per page, and your
+                voice. They appear in Learn → Stories.
+              </p>
+              <div className="custom-tile-list">
+                {customStories.map((s) => (
+                  <div key={s.id} className="custom-tile-row">
+                    <img src={s.pages[0]?.image} alt="" className="custom-tile-thumb" />
+                    <span className="custom-tile-name">
+                      {s.title} · {s.pages.length} pages
+                    </span>
+                    <button
+                      className="btn-delete"
+                      onClick={() => onRemoveStory(s.id)}
+                      aria-label={`Delete story ${s.title}`}
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button className="btn-secondary btn-add-tile" onClick={onAddStory}>
+                ➕ New story (photos + voice)
+              </button>
             </section>
 
             <section>

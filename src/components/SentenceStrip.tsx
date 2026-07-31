@@ -10,9 +10,10 @@ interface SentenceStripProps {
   onRemove: (index: number) => void;
   onClear: () => void;
   onHistory: () => void;
+  onShare: () => void;
 }
 
-export function SentenceStrip({ words, language, speaking, hasHistory, onPlay, onRemove, onClear, onHistory }: SentenceStripProps) {
+export function SentenceStrip({ words, language, speaking, hasHistory, onPlay, onRemove, onClear, onHistory, onShare }: SentenceStripProps) {
   return (
     <div className="sentence-strip">
       <div className="sentence-words">
@@ -62,6 +63,14 @@ export function SentenceStrip({ words, language, speaking, hasHistory, onPlay, o
           aria-label="Recent sentences"
         >
           🕘
+        </button>
+        <button
+          className="btn-history"
+          onClick={onShare}
+          disabled={words.length === 0}
+          aria-label="Share as picture"
+        >
+          📤
         </button>
       </div>
     </div>

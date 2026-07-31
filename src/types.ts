@@ -23,6 +23,22 @@ export interface Word {
   videoId?: string;
 }
 
+/** One page of a parent-made social story */
+export interface CustomStoryPage {
+  image: string;
+  caption: string;
+  audio?: string;
+}
+
+/** A parent-made social story (photos + captions + optional recorded voice) */
+export interface CustomStory {
+  id: string;
+  profileId: string;
+  title: string;
+  pages: CustomStoryPage[];
+  createdAt: number;
+}
+
 /** A parent-added YouTube reward video */
 export interface VideoTile {
   id: string;

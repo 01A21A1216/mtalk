@@ -3,10 +3,11 @@
  * Fresh version whenever online; cached copy keeps the app working offline.
  * (v1 was cache-first, which pinned users to the first version they loaded.)
  */
-const CACHE = 'mtalk-v3';
+/* Relative paths so the app works at any base (localhost, LAN, GitHub Pages) */
+const CACHE = 'mtalk-v4';
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE).then((c) => c.addAll(['/'])));
+  event.waitUntil(caches.open(CACHE).then((c) => c.addAll(['./'])));
   self.skipWaiting();
 });
 
@@ -43,7 +44,7 @@ self.addEventListener('fetch', (event) => {
       .catch(() =>
         caches
           .match(event.request)
-          .then((cached) => cached ?? caches.match('/'))
+          .then((cached) => cached ?? caches.match('./'))
           .then((cached) => cached ?? Response.error()),
       ),
   );
