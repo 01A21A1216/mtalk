@@ -36,6 +36,51 @@ Built as a hybrid app: **Vite + React + TypeScript** web core wrapped with **Cap
 - **Child-locked settings** — tap the gear, answer a simple sum; caregivers manage kids, languages, age modes, speech, videos, home tiles, and more
 - **Fully offline** — no network needed; speech uses on-device voices
 
+## Grown-up accounts (login)
+
+MTalk asks a grown-up to sign in before the board appears. A fresh install opens on **"Welcome — set up this tablet"**, where the parent creates their own account (name + 4–6 digit PIN); after that it is the account picker and keypad.
+
+**App owner.** `lakshminarayana.kodavati@gmail.com` is the owner account — support, subscriptions and every install ([`src/config.ts`](src/config.ts)). An account with that email is always an admin, cannot be demoted or deleted on any device, and is badged 👑 in Settings → Accounts. With cloud sign-in configured, the owner signing in on a tablet that has no such account is provisioned an admin account there automatically, which is what makes remote support possible. Everyone sees **❓ Need help?** on the login screen and **Help & support** in Settings; both open a pre-filled mail to that address with the app version and device.
+
+Roles on a device:
+
+| | Owner 👑 / Admin 🛡️ | Parent 👪 |
+|---|---|---|
+| Children they see | all | only the ones assigned to them |
+| Kids (add/remove) | ✅ | — |
+| Accounts (add/remove, reset PINs, change roles) | ✅ | — |
+| Backup / restore | ✅ | — |
+| Kid lock | ✅ | — |
+| Language, age mode, tiles, home board, stories, videos, day plan, quiz, insights | ✅ | ✅ (their child only) |
+| Own PIN | ✅ | ✅ |
+
+- **PINs are hashed** with PBKDF2-SHA256 (120k rounds, per-account salt) and only the hash is stored. On a page served over plain http, `crypto.subtle` is unavailable, so a weaker fallback is used and the record is upgraded automatically at the next sign-in from a secure context.
+- **"Stay signed in on this tablet"** is on by default so a restart does not leave a non-verbal child waiting for a grown-up. Turning it off ends the session when the app closes. Sign out lives in Settings → footer.
+- Six wrong PINs start a growing lockout (15s, 30s, 60s … capped at 5 minutes).
+- The arithmetic gate on ⚙️ Settings is unchanged — it stops the *child* wandering in while the grown-up is signed in.
+- Accounts are per-device and are **not** included in backup files.
+
+### Subscriptions
+
+Parents pay on a web page you host (Razorpay/Stripe) — never inside the app, which keeps Google Play and Apple's payment rules out of the picture. The flow is: payment page → your webhook → a `subscriptions/{cloudUid}` document in Firestore → the app reads it at email sign-in and caches the answer on the device ([`src/services/subscription.ts`](src/services/subscription.ts)).
+
+- Settings → 💳 Subscription shows the plan for the signed-in account. Set `VITE_SUBSCRIBE_URL` and it also shows a **Manage subscription** link; with no URL it says so instead.
+- **Nothing is gated yet.** `PREMIUM_FEATURES` in [`src/config.ts`](src/config.ts) is empty on purpose — the board, tiles and speech must never depend on a payment, so put only genuinely optional extras there. `isLocked(featureId, entitlement)` is ready when you decide.
+- Until the webhook exists, the owner can grant or revoke a year on a device by hand from that section.
+- A failed or offline entitlement check never downgrades an account — the cached record stands.
+
+### Optional cloud sign-in
+
+Copy `.env.example` to `.env` and add a Firebase Web API key to also offer email + password sign-in (Firebase Authentication, called over its REST API — no extra dependency):
+
+```bash
+VITE_FIREBASE_API_KEY=AIza...
+```
+
+Enable Authentication → Sign-in method → Email/Password in the Firebase console. A cloud sign-in is matched to an account on the tablet **by email**, so the admin must first add that email in Settings → Accounts. PIN sign-in keeps working with no internet — an AAC device has to work with the WiFi off.
+
+Relevant files: [`src/services/auth.ts`](src/services/auth.ts), [`src/services/authCloud.ts`](src/services/authCloud.ts), [`src/hooks/useAuth.ts`](src/hooks/useAuth.ts), [`src/components/LoginScreen.tsx`](src/components/LoginScreen.tsx), [`src/components/AccountsSection.tsx`](src/components/AccountsSection.tsx).
+
 ## Development
 
 ```bash

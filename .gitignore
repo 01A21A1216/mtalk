@@ -22,6 +22,8 @@ android/local.properties
 # SECRETS — never commit the signing key or its passwords
 android/mtalk-release.keystore
 android/keystore.properties
+.env
+.env.local
 
 # Packaged builds & QR codes (regenerable)
 *.apk

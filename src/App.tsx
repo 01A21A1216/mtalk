@@ -1,6 +1,7 @@
 import { Fragment, Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CategoryBar } from './components/CategoryBar';
 import { DaySchedule } from './components/DaySchedule';
+import { LoginScreen } from './components/LoginScreen';
 import { ProfilePicker } from './components/ProfilePicker';
 import { QuickBar } from './components/QuickBar';
 import { SentenceStrip } from './components/SentenceStrip';
@@ -38,6 +39,8 @@ import { CATEGORIES, QUICK_WORDS } from './data/vocabulary';
 import { STORIES } from './data/stories';
 import { SCRIPT_SETS, TRACE_SETS } from './data/traceSets';
 import { UI, sectionLabel, wordLabel } from './i18n';
+import { useAuth } from './hooks/useAuth';
+import { canAccessKid } from './services/auth';
 import { useCustomCategories } from './hooks/useCustomCategories';
 import { useCustomStories } from './hooks/useCustomStories';
 import { useCustomTiles } from './hooks/useCustomTiles';
@@ -54,7 +57,7 @@ import { useVideoTime } from './hooks/useVideoTime';
 import { shareSentenceCard } from './services/shareCard';
 import { playWordSfx } from './services/soundEffects';
 import { playPop, playSequence, speakWord } from './services/speech';
-import type { Category, CustomTile, Profile, Word } from './types';
+import type { AppUser, Category, CustomTile, Profile, UserRole, Word } from './types';
 
 const MAX_SENTENCE_WORDS = 10;
 
@@ -72,15 +75,75 @@ const SCREEN_TABS: {
   { id: 'write', emoji: '✍️', labelKey: 'tabWrite' },
 ];
 
-/** Root: pick a profile, then run the app keyed to it (remounts on switch) */
+/**
+ * Root: a grown-up signs in, then picks the child, then the app runs keyed to
+ * that child (remounts on switch). Admins see every child; a parent only sees
+ * the children assigned to their account.
+ */
 export default function App() {
+  const auth = useAuth();
   const { profiles, active, setActive, addProfile, removeProfile } = useProfiles();
-  const [pickerOpen, setPickerOpen] = useState(profiles.length > 1);
+  const [pickerOpen, setPickerOpen] = useState(true);
 
-  if (pickerOpen || !active) {
+  const user = auth.user;
+  const visible = useMemo(
+    () => (user ? profiles.filter((p) => canAccessKid(user, p.id)) : []),
+    [profiles, user],
+  );
+
+  // A parent must never land on a child they are not responsible for
+  useEffect(() => {
+    if (visible.length && !visible.some((p) => p.id === active?.id)) {
+      setActive(visible[0].id);
+    }
+  }, [visible, active, setActive]);
+
+  // With a single child there is nobody to choose between, so the picker is
+  // spent immediately — otherwise adding a second child would bounce the
+  // grown-up out of settings and onto the "who is talking?" screen.
+  useEffect(() => {
+    if (pickerOpen && user && visible.length <= 1) setPickerOpen(false);
+  }, [pickerOpen, user, visible.length]);
+
+  if (!user) {
+    return (
+      <LoginScreen
+        users={auth.users}
+        needsSetup={auth.needsSetup}
+        onSetup={async ({ name, pin, email }) => {
+          const created = await auth.createUser({ name, role: 'admin', pin, email });
+          auth.signInAs(created.id, true);
+        }}
+        onSignIn={auth.signIn}
+        onCloudSignIn={auth.resolveCloudSignIn}
+      />
+    );
+  }
+
+  const kid = visible.find((p) => p.id === active?.id) ?? visible[0];
+
+  if (!kid) {
+    return (
+      <div className="profile-screen login-screen">
+        <div className="brand profile-brand">
+          <span className="brand-logo" aria-hidden="true">🗣️</span>
+          <span className="brand-name">MTalk</span>
+        </div>
+        <h1 className="profile-question">No children yet</h1>
+        <p className="login-sub">
+          Ask an admin to add a child to your account in ⚙️ Settings → Accounts.
+        </p>
+        <button className="btn-secondary" onClick={auth.signOut}>
+          🚪 Sign out
+        </button>
+      </div>
+    );
+  }
+
+  if (pickerOpen && visible.length > 1) {
     return (
       <ProfilePicker
-        profiles={profiles}
+        profiles={visible}
         onPick={(id) => {
           setActive(id);
           setPickerOpen(false);
@@ -91,12 +154,27 @@ export default function App() {
 
   return (
     <MTalkApp
-      key={active.id}
-      profile={active}
-      profiles={profiles}
+      key={kid.id}
+      profile={kid}
+      profiles={visible}
+      user={user}
+      users={auth.users}
       onSwitchProfile={() => setPickerOpen(true)}
       onAddProfile={addProfile}
-      onRemoveProfile={removeProfile}
+      onRemoveProfile={(id) => {
+        removeProfile(id);
+        auth.forgetKid(id);
+      }}
+      onCreateUser={async (input) => {
+        await auth.createUser(input);
+      }}
+      onUpdateUser={auth.updateUser}
+      onSetUserPin={auth.setUserPin}
+      onRemoveUser={auth.removeUser}
+      onSignOut={() => {
+        setPickerOpen(true);
+        auth.signOut();
+      }}
     />
   );
 }
@@ -104,12 +182,38 @@ export default function App() {
 interface MTalkAppProps {
   profile: Profile;
   profiles: Profile[];
+  user: AppUser;
+  users: AppUser[];
   onSwitchProfile: () => void;
   onAddProfile: (name: string) => void;
   onRemoveProfile: (id: string) => void;
+  onCreateUser: (input: {
+    name: string;
+    role: UserRole;
+    pin: string;
+    email?: string;
+    kidIds: string[];
+  }) => Promise<void>;
+  onUpdateUser: (id: string, patch: Partial<AppUser>) => void;
+  onSetUserPin: (id: string, pin: string) => Promise<void>;
+  onRemoveUser: (id: string) => string | null;
+  onSignOut: () => void;
 }
 
-function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemoveProfile }: MTalkAppProps) {
+function MTalkApp({
+  profile,
+  profiles,
+  user,
+  users,
+  onSwitchProfile,
+  onAddProfile,
+  onRemoveProfile,
+  onCreateUser,
+  onUpdateUser,
+  onSetUserPin,
+  onRemoveUser,
+  onSignOut,
+}: MTalkAppProps) {
   const { settings, update } = useSettings(profile.id);
   const { tiles: customTiles, addTile, updateTile, removeTile } = useCustomTiles(profile.id);
   const { categories: customCategories, addCategory, removeCategory } = useCustomCategories(profile.id);
@@ -734,6 +838,13 @@ function MTalkApp({ profile, profiles, onSwitchProfile, onAddProfile, onRemovePr
           profileId={profile.id}
           profiles={profiles}
           activeProfileId={profile.id}
+          user={user}
+          users={users}
+          onCreateUser={onCreateUser}
+          onUpdateUser={onUpdateUser}
+          onSetUserPin={onSetUserPin}
+          onRemoveUser={onRemoveUser}
+          onSignOut={onSignOut}
           onAddProfile={onAddProfile}
           onRemoveProfile={onRemoveProfile}
           customCategories={customCategories}

@@ -70,6 +70,29 @@ export interface Profile {
   emoji: string;
 }
 
+/** Grown-up roles: admin runs the tablet, parent looks after their own kids */
+export type UserRole = 'admin' | 'parent';
+
+/** How a PIN was hashed — 'weak' records are upgraded on the next sign-in */
+export type PinAlgo = 'pbkdf2' | 'weak';
+
+/** A grown-up account (caregiver login), stored on the device */
+export interface AppUser {
+  id: string;
+  name: string;
+  role: UserRole;
+  /** Optional — links this account to a cloud login of the same address */
+  email?: string;
+  /** Child profiles a parent may open; ignored for admins, who see all */
+  kidIds: string[];
+  pinHash: string;
+  pinSalt: string;
+  pinAlgo: PinAlgo;
+  /** Cloud provider user id once an email sign-in has been linked */
+  cloudUid?: string;
+  createdAt: number;
+}
+
 /** A parent-created category for organising custom tiles */
 export interface CustomCategory {
   id: string;

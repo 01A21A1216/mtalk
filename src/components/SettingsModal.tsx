@@ -5,7 +5,16 @@ import { kidLockAvailable, lockApp, unlockApp } from '../services/kidlock';
 import { APP_VERSION } from '../version';
 import { profileKey } from '../hooks/useProfiles';
 import { shareProgressReport } from '../services/progressReport';
-import type { AgeMode, CustomCategory, CustomStory, CustomTile, Profile, ScheduleStep, Settings, VideoTile, Word } from '../types';
+import { AccountsSection } from './AccountsSection';
+import { SUBSCRIBE_URL, SUPPORT_EMAIL } from '../config';
+import { isOwner } from '../services/auth';
+import {
+  FREE,
+  describe,
+  entitlementFor,
+  saveEntitlement,
+} from '../services/subscription';
+import type { AgeMode, AppUser, CustomCategory, CustomStory, CustomTile, Profile, ScheduleStep, Settings, UserRole, VideoTile, Word } from '../types';
 
 const BACKUP_BASES = ['settings', 'mastery', 'usage', 'history', 'bigrams', 'cats', 'home'];
 
@@ -14,6 +23,20 @@ interface SettingsModalProps {
   profileId: string;
   profiles: Profile[];
   activeProfileId: string;
+  /** Signed-in grown-up — decides which sections are shown */
+  user: AppUser;
+  users: AppUser[];
+  onCreateUser: (input: {
+    name: string;
+    role: UserRole;
+    pin: string;
+    email?: string;
+    kidIds: string[];
+  }) => Promise<void>;
+  onUpdateUser: (id: string, patch: Partial<AppUser>) => void;
+  onSetUserPin: (id: string, pin: string) => Promise<void>;
+  onRemoveUser: (id: string) => string | null;
+  onSignOut: () => void;
   customCategories: CustomCategory[];
   pinnedWords: Word[];
   customTiles: CustomTile[];
@@ -77,6 +100,13 @@ export function SettingsModal({
   profileId,
   profiles,
   activeProfileId,
+  user,
+  users,
+  onCreateUser,
+  onUpdateUser,
+  onSetUserPin,
+  onRemoveUser,
+  onSignOut,
   customCategories,
   pinnedWords,
   customTiles,
@@ -116,6 +146,8 @@ export function SettingsModal({
   onClose,
 }: SettingsModalProps) {
   const importRef = useRef<HTMLInputElement>(null);
+  /** Parents manage their own child's board; admins also manage the tablet */
+  const isAdmin = user.role === 'admin';
   const [backupMessage, setBackupMessage] = useState('');
   const [newProfileName, setNewProfileName] = useState('');
   const [newCatName, setNewCatName] = useState('');
@@ -128,6 +160,9 @@ export function SettingsModal({
   const [stepTime, setStepTime] = useState('');
   const [choiceA, setChoiceA] = useState('');
   const [choiceB, setChoiceB] = useState('');
+  const [ownPin, setOwnPin] = useState('');
+  const [ownPinMessage, setOwnPinMessage] = useState('');
+  const [entitlement, setEntitlement] = useState(() => entitlementFor(user.id));
 
   const exportBackup = () => {
     const data: Record<string, unknown> = { customTiles };
@@ -330,6 +365,7 @@ export function SettingsModal({
               </div>
             </section>
 
+            {isAdmin && (
             <section>
               <h3>👨‍👩‍👧 Kids ({profiles.length})</h3>
               <div className="custom-tile-list">
@@ -374,6 +410,7 @@ export function SettingsModal({
                 </button>
               </div>
             </section>
+            )}
 
             <section>
               <h3>📁 Tile categories ({customCategories.length})</h3>
@@ -904,7 +941,7 @@ export function SettingsModal({
               </div>
             </section>
 
-            {kidLockAvailable && (
+            {kidLockAvailable && isAdmin && (
               <section>
                 <h3>🔒 Kid lock (this device)</h3>
                 <p className="ft-hint">
@@ -934,6 +971,19 @@ export function SettingsModal({
               </section>
             )}
 
+            {isAdmin && (
+              <AccountsSection
+                users={users}
+                currentUser={user}
+                profiles={profiles}
+                onCreate={onCreateUser}
+                onUpdate={onUpdateUser}
+                onSetPin={onSetUserPin}
+                onRemove={onRemoveUser}
+              />
+            )}
+
+            {isAdmin && (
             <section>
               <h3>💾 Backup</h3>
               <div className="modal-actions" style={{ justifyContent: 'flex-start' }}>
@@ -953,10 +1003,132 @@ export function SettingsModal({
               </div>
               {backupMessage && <p className="progress-line">{backupMessage}</p>}
             </section>
+            )}
+
+            <section>
+              <h3>💳 Subscription</h3>
+              <p className="progress-line">
+                {user.name}: <strong>{describe(entitlement)}</strong>
+                {entitlement.source === 'granted' && ' (granted by support)'}
+              </p>
+              <p className="ft-hint">
+                The child's board, tiles and speech are always free and always
+                work offline — a subscription never takes a child's voice away.
+              </p>
+              {SUBSCRIBE_URL ? (
+                <div className="modal-actions" style={{ justifyContent: 'flex-start' }}>
+                  <a
+                    className="btn-secondary"
+                    href={`${SUBSCRIBE_URL}${SUBSCRIBE_URL.includes('?') ? '&' : '?'}email=${encodeURIComponent(user.email ?? '')}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    💳 Manage subscription
+                  </a>
+                </div>
+              ) : (
+                <p className="ft-hint">
+                  No subscription page is set up yet. Email {SUPPORT_EMAIL} with
+                  any billing question.
+                </p>
+              )}
+              {isOwner(user) && (
+                <>
+                  <p className="ft-hint">
+                    Owner tools — until the payment webhook is live, you can set
+                    entitlement on this device by hand.
+                  </p>
+                  <div className="modal-actions" style={{ justifyContent: 'flex-start' }}>
+                    <button
+                      className="btn-secondary"
+                      onClick={() => {
+                        const year = Date.now() + 365 * 24 * 60 * 60 * 1000;
+                        saveEntitlement(user.id, {
+                          plan: 'premium',
+                          expiresAt: year,
+                          source: 'granted',
+                          checkedAt: Date.now(),
+                        });
+                        setEntitlement(entitlementFor(user.id));
+                      }}
+                    >
+                      ✅ Grant 1 year
+                    </button>
+                    <button
+                      className="btn-secondary"
+                      onClick={() => {
+                        saveEntitlement(user.id, {
+                          ...FREE,
+                          checkedAt: Date.now(),
+                        });
+                        setEntitlement(entitlementFor(user.id));
+                      }}
+                    >
+                      ↩️ Back to free
+                    </button>
+                  </div>
+                </>
+              )}
+            </section>
+
+            <section>
+              <h3>❓ Help & support</h3>
+              <p className="ft-hint">
+                Questions, trouble signing in, or anything about your
+                subscription — we answer at {SUPPORT_EMAIL}.
+              </p>
+              <div className="modal-actions" style={{ justifyContent: 'flex-start' }}>
+                <a
+                  className="btn-secondary"
+                  href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('MTalk help')}&body=${encodeURIComponent(
+                    `Tell us what is happening:\n\n\n---\nMTalk v${APP_VERSION}\nAccount: ${user.name} (${user.role})\nDevice: ${navigator.userAgent}`,
+                  )}`}
+                >
+                  ✉️ Email support
+                </a>
+              </div>
+            </section>
+
+            <section>
+              <h3>🔑 My PIN</h3>
+              <p className="ft-hint">Change the PIN you use to sign in on this tablet.</p>
+              <div className="add-row">
+                <input
+                  className="text-field add-row-field"
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={6}
+                  placeholder="New PIN (4–6 digits)"
+                  value={ownPin}
+                  onChange={(e) => setOwnPin(e.target.value.replace(/\D/g, ''))}
+                />
+                <button
+                  className="btn-secondary"
+                  onClick={async () => {
+                    if (ownPin.length < 4) {
+                      setOwnPinMessage('PIN must be at least 4 digits.');
+                      return;
+                    }
+                    await onSetUserPin(user.id, ownPin);
+                    setOwnPin('');
+                    setOwnPinMessage('PIN updated.');
+                  }}
+                >
+                  Save PIN
+                </button>
+              </div>
+              {ownPinMessage && <p className="progress-line">{ownPinMessage}</p>}
+            </section>
             </div>
 
             <footer className="settings-foot">
-              <p className="version-line">MTalk v{APP_VERSION}</p>
+              <p className="version-line">
+                MTalk v{APP_VERSION} · signed in as {user.name}
+                {user.role === 'admin' ? ' 🛡️' : ' 👪'}
+              </p>
+              <button className="btn-secondary" onClick={onSignOut}>
+                🚪 Sign out
+              </button>
               <button className="btn-primary" onClick={onClose}>
                 Done ✅
               </button>
