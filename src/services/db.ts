@@ -8,10 +8,12 @@ import type { CustomStory, CustomTile } from '../types';
 const DB_NAME = 'mtalk';
 const STORE = 'customTiles';
 const STORY_STORE = 'customStories';
+const VOICE_STORE = 'voices';
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 2);
+    // v3 adds the voice pack — a parent's own recordings of core words
+    const req = indexedDB.open(DB_NAME, 3);
     req.onupgradeneeded = () => {
       if (!req.result.objectStoreNames.contains(STORE)) {
         req.result.createObjectStore(STORE, { keyPath: 'id' });
@@ -19,10 +21,46 @@ function openDb(): Promise<IDBDatabase> {
       if (!req.result.objectStoreNames.contains(STORY_STORE)) {
         req.result.createObjectStore(STORY_STORE, { keyPath: 'id' });
       }
+      if (!req.result.objectStoreNames.contains(VOICE_STORE)) {
+        req.result.createObjectStore(VOICE_STORE, { keyPath: 'id' });
+      }
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
+}
+
+/** One parent recording: `${profileId}:${wordId}` → audio data URL */
+export interface VoiceClip {
+  id: string;
+  profileId: string;
+  wordId: string;
+  audio: string;
+  recordedAt: number;
+}
+
+export async function getVoiceClips(profileId: string): Promise<VoiceClip[]> {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const req = db.transaction(VOICE_STORE, 'readonly').objectStore(VOICE_STORE).getAll();
+    req.onsuccess = () =>
+      resolve((req.result as VoiceClip[]).filter((c) => c.profileId === profileId));
+    req.onerror = () => reject(req.error);
+  });
+}
+
+export async function putVoiceClip(clip: VoiceClip): Promise<void> {
+  const db = await openDb();
+  const tx = db.transaction(VOICE_STORE, 'readwrite');
+  tx.objectStore(VOICE_STORE).put(clip);
+  return txDone(tx);
+}
+
+export async function deleteVoiceClip(id: string): Promise<void> {
+  const db = await openDb();
+  const tx = db.transaction(VOICE_STORE, 'readwrite');
+  tx.objectStore(VOICE_STORE).delete(id);
+  return txDone(tx);
 }
 
 function txDone(tx: IDBTransaction): Promise<void> {

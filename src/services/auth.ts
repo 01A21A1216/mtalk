@@ -105,7 +105,9 @@ export interface NewUserInput {
   name: string;
   role: UserRole;
   pin: string;
-  email?: string;
+  /** Required for every new account — it is how the owner and the cloud
+   *  identify a grown-up. Existing records from before this rule keep working. */
+  email: string;
   kidIds?: string[];
 }
 
@@ -145,6 +147,9 @@ export async function withNewPin(user: AppUser, pin: string): Promise<AppUser> {
   const { hash, algo } = await hashPin(pin, salt);
   return { ...user, pinSalt: salt, pinHash: hash, pinAlgo: algo };
 }
+
+/** Loose on purpose — the job is to catch typos, not to police valid addresses */
+export const isEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
 /** The app owner's own account — protected from demotion and deletion */
 export const isOwner = (user: AppUser) => isOwnerEmail(user.email);

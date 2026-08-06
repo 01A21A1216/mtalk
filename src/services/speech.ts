@@ -1,4 +1,5 @@
 import { wordSpeech } from '../i18n';
+import { recordedVoiceFor } from './voicePack';
 import type { Language, Word } from '../types';
 
 /**
@@ -24,6 +25,8 @@ const LANG_PREFERENCES: Record<Language, string[]> = {
   te: ['te-IN', 'te'],
   ta: ['ta-IN', 'ta'],
   kn: ['kn-IN', 'kn'],
+  mr: ['mr-IN', 'mr'],
+  bn: ['bn-IN', 'bn-BD', 'bn'],
 };
 
 const LANG_TAGS: Record<Language, string> = {
@@ -32,6 +35,8 @@ const LANG_TAGS: Record<Language, string> = {
   te: 'te-IN',
   ta: 'ta-IN',
   kn: 'kn-IN',
+  mr: 'mr-IN',
+  bn: 'bn-IN',
 };
 
 function pickVoice(language: Language): SpeechSynthesisVoice | null {
@@ -92,6 +97,13 @@ export function speakWord(
   rate?: number,
   motherTongue?: Language | null,
 ) {
+  // a parent's own recording of this word wins over any synthetic voice
+  const recorded = recordedVoiceFor(word.id);
+  if (recorded) {
+    window.speechSynthesis?.cancel();
+    void playAudioAsync(recorded);
+    return;
+  }
   if (word.audio) {
     window.speechSynthesis?.cancel();
     void playAudioAsync(word.audio);
@@ -113,7 +125,10 @@ export function speakWord(
  */
 export async function playSequence(words: Word[], language: Language, rate?: number): Promise<void> {
   for (const word of words) {
-    if (word.audio) {
+    const recorded = recordedVoiceFor(word.id);
+    if (recorded) {
+      await playAudioAsync(recorded);
+    } else if (word.audio) {
       await playAudioAsync(word.audio);
     } else {
       await speakAsync(wordText(word, language), language, rate);

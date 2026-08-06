@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { isOwnerEmail } from '../config';
 import { fetchEntitlement, saveEntitlement } from '../services/subscription';
+import { publishProfile, setDirectoryToken } from '../services/directory';
+import { APP_VERSION } from '../version';
 import {
   adminCount,
   clearSession,
@@ -82,6 +84,10 @@ export function useAuth() {
       const email = cloud.email.trim().toLowerCase();
       // Entitlement is refreshed opportunistically: a failure here must never
       // block the sign-in, so the cached record simply stays as it is.
+      // the session's token is what lets this device write its own entry and,
+      // for the owner, read the whole list
+      setDirectoryToken(cloud.idToken ?? null);
+
       const refresh = (localId: string) => {
         if (!cloud.idToken) return;
         void fetchEntitlement(cloud.uid, cloud.idToken).then((e) => {
@@ -94,6 +100,7 @@ export function useAuth() {
         setUsers((prev) =>
           prev.map((u) => (u.id === match.id ? { ...u, cloudUid: cloud.uid } : u)),
         );
+        void publishProfile(cloud.uid, match, match.kidIds.length, APP_VERSION);
         saveSession(match.id, remember);
         setUserId(match.id);
         return null;
@@ -109,6 +116,7 @@ export function useAuth() {
         });
         setUsers((prev) => [...prev, { ...created, cloudUid: cloud.uid }]);
         refresh(created.id);
+        void publishProfile(cloud.uid, created, 0, APP_VERSION);
         saveSession(created.id, remember);
         setUserId(created.id);
         return null;

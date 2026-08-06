@@ -60,6 +60,21 @@ Roles on a device:
 - The arithmetic gate on ⚙️ Settings is unchanged — it stops the *child* wandering in while the grown-up is signed in.
 - Accounts are per-device and are **not** included in backup files.
 
+### Tile pictures
+
+Every parent-made tile needs a picture. The editor offers four ways to get one ([`src/services/imageSources.ts`](src/services/imageSources.ts)):
+
+| | How it works |
+|---|---|
+| 📸 Camera | A file input with `capture="environment"`, so Android opens the camera app directly — no extra permission needed inside the WebView |
+| 🖼️ Gallery | The existing photo picker |
+| 🔍 Search web | [Openverse](https://openverse.org) — Creative Commons images, **no API key or account**. Its thumbnail endpoint sends CORS headers, so a picked image is cropped square and stored as a data URL. The licence is shown on every result |
+| ✨ Make one | Generates a picture from the tile's name and category. Hidden unless `VITE_IMAGE_GEN_URL` is set |
+
+A real photo of the child's own bottle beats any stock image, so the camera stays first. Search and AI are for what you can't photograph — "aeroplane", "doctor", "angry".
+
+**On the AI option:** the app posts to an endpoint *you* host, never straight to an image provider. A provider key shipped inside an APK can be extracted and spent by whoever finds it, so the key belongs server-side in a Cloud Function that this URL points at.
+
 ### Subscriptions
 
 Parents pay on a web page you host (Razorpay/Stripe) — never inside the app, which keeps Google Play and Apple's payment rules out of the picture. The flow is: payment page → your webhook → a `subscriptions/{cloudUid}` document in Firestore → the app reads it at email sign-in and caches the answer on the device ([`src/services/subscription.ts`](src/services/subscription.ts)).

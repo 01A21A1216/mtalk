@@ -17,6 +17,11 @@ const DEFAULT_SETTINGS: Settings = {
   firstThenThen: null,
   videoLimitMins: 10,
   tileSize: 0,
+  numberLimit: 10,
+  sentenceStarters: false,
+  enabledPackIds: [],
+  hiddenCategoryIds: [],
+  categoryOrder: [],
 };
 
 function loadSettings(key: string): Settings {

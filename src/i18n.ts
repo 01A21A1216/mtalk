@@ -1,4 +1,6 @@
+import { BN_CATEGORIES, BN_WORDS } from './data/bn';
 import { KN_CATEGORIES, KN_WORDS } from './data/kn';
+import { MR_CATEGORIES, MR_WORDS } from './data/mr';
 import { TA_CATEGORIES, TA_WORDS } from './data/ta';
 import { TE_CATEGORIES, TE_WORDS } from './data/te';
 import type { Category, Language, Word } from './types';
@@ -15,6 +17,8 @@ const EXTRA_LANGS: Partial<
   te: { words: TE_WORDS, categories: TE_CATEGORIES },
   ta: { words: TA_WORDS, categories: TA_CATEGORIES },
   kn: { words: KN_WORDS, categories: KN_CATEGORIES },
+  mr: { words: MR_WORDS, categories: MR_CATEGORIES },
+  bn: { words: BN_WORDS, categories: BN_CATEGORIES },
 };
 
 export function wordLabel(word: Word, language: Language): string {
@@ -55,6 +59,8 @@ const SECTIONS: Record<string, Record<Language, string>> = {
     te: '👨‍👩‍👧 కుటుంబం',
     ta: '👨‍👩‍👧 குடும்பம்',
     kn: '👨‍👩‍👧 ಕುಟುಂಬ',
+    mr: '👨‍👩‍👧 कुटुंब',
+    bn: '👨‍👩‍👧 পরিবার',
   },
   talking: {
     en: '💬 Talking',
@@ -62,6 +68,8 @@ const SECTIONS: Record<string, Record<Language, string>> = {
     te: '💬 మాటలు',
     ta: '💬 பேச்சு',
     kn: '💬 ಮಾತು',
+    mr: '💬 बोलणे',
+    bn: '💬 কথা',
   },
   feelings: {
     en: '😊 Feelings',
@@ -69,6 +77,8 @@ const SECTIONS: Record<string, Record<Language, string>> = {
     te: '😊 భావాలు',
     ta: '😊 உணர்வுகள்',
     kn: '😊 ಭಾವನೆಗಳು',
+    mr: '😊 भावना',
+    bn: '😊 অনুভূতি',
   },
   doing: {
     en: '🏃 Doing',
@@ -76,6 +86,8 @@ const SECTIONS: Record<string, Record<Language, string>> = {
     te: '🏃 పనులు',
     ta: '🏃 செயல்கள்',
     kn: '🏃 ಕೆಲಸಗಳು',
+    mr: '🏃 कामं',
+    bn: '🏃 কাজ',
   },
   eating: {
     en: '🍽️ Eating',
@@ -83,6 +95,8 @@ const SECTIONS: Record<string, Record<Language, string>> = {
     te: '🍽️ ఆహారం',
     ta: '🍽️ உணவு',
     kn: '🍽️ ಊಟ',
+    mr: '🍽️ खाणं',
+    bn: '🍽️ খাবার',
   },
   body: {
     en: '🖐️ My body',
@@ -90,6 +104,8 @@ const SECTIONS: Record<string, Record<Language, string>> = {
     te: '🖐️ శరీరం',
     ta: '🖐️ உடல்',
     kn: '🖐️ ದೇಹ',
+    mr: '🖐️ शरीर',
+    bn: '🖐️ শরীর',
   },
   things: {
     en: '🧸 Things',
@@ -97,6 +113,8 @@ const SECTIONS: Record<string, Record<Language, string>> = {
     te: '🧸 వస్తువులు',
     ta: '🧸 பொருட்கள்',
     kn: '🧸 ವಸ್ತುಗಳು',
+    mr: '🧸 वस्तू',
+    bn: '🧸 জিনিস',
   },
   animals: {
     en: '🐶 Animals',
@@ -104,6 +122,8 @@ const SECTIONS: Record<string, Record<Language, string>> = {
     te: '🐶 జంతువులు',
     ta: '🐶 விலங்குகள்',
     kn: '🐶 ಪ್ರಾಣಿಗಳು',
+    mr: '🐶 प्राणी',
+    bn: '🐶 প্রাণী',
   },
   outside: {
     en: '🌳 Outside',
@@ -111,6 +131,8 @@ const SECTIONS: Record<string, Record<Language, string>> = {
     te: '🌳 బయట',
     ta: '🌳 வெளியே',
     kn: '🌳 ಹೊರಗೆ',
+    mr: '🌳 बाहेर',
+    bn: '🌳 বাইরে',
   },
   littlewords: {
     en: '➕ Little words',
@@ -118,6 +140,8 @@ const SECTIONS: Record<string, Record<Language, string>> = {
     te: '➕ చిన్న పదాలు',
     ta: '➕ சிறு சொற்கள்',
     kn: '➕ ಚಿಕ್ಕ ಪದಗಳು',
+    mr: '➕ छोटे शब्द',
+    bn: '➕ ছোট শব্দ',
   },
 };
 
@@ -131,9 +155,11 @@ export const LANGUAGE_NAMES: Record<Language, string> = {
   te: 'తెలుగు',
   ta: 'தமிழ்',
   kn: 'ಕನ್ನಡ',
+  mr: 'मराठी',
+  bn: 'বাংলা',
 };
 
-export const LANGUAGE_ORDER: Language[] = ['en', 'hi', 'te', 'ta', 'kn'];
+export const LANGUAGE_ORDER: Language[] = ['en', 'hi', 'te', 'ta', 'kn', 'mr', 'bn'];
 
 export function categoryLabel(category: Category, language: Language): string {
   if (language === 'en') return category.en;
@@ -148,7 +174,9 @@ interface UiStrings {
   tabLearn: string;
   tabQuiz: string;
   tabWrite: string;
+  tabMusic: string;
   sentenceHint: string;
+  numbersShown: string;
   quizPrompt: (word: string) => string;
   praise: string;
   tryAgain: string;
@@ -171,7 +199,9 @@ export const UI: Record<Language, UiStrings> = {
     tabLearn: 'Learn',
     tabQuiz: 'Quiz',
     tabWrite: 'Write',
+    tabMusic: 'Music',
     sentenceHint: '👇 Tap pictures to talk',
+    numbersShown: 'Showing numbers',
     quizPrompt: (w) => `Where is ${w}?`,
     praise: 'Very good!',
     tryAgain: 'Try again!',
@@ -192,7 +222,9 @@ export const UI: Record<Language, UiStrings> = {
     tabLearn: 'सीखो',
     tabQuiz: 'खेलो',
     tabWrite: 'लिखो',
+    tabMusic: 'संगीत',
     sentenceHint: '👇 बोलने के लिए चित्र दबाओ',
+    numbersShown: 'दिख रहे अंक',
     quizPrompt: (w) => `${w} कहाँ है?`,
     praise: 'शाबाश!',
     tryAgain: 'फिर से कोशिश करो',
@@ -213,7 +245,9 @@ export const UI: Record<Language, UiStrings> = {
     tabLearn: 'నేర్చుకో',
     tabQuiz: 'ఆడు',
     tabWrite: 'రాయి',
+    tabMusic: 'సంగీతం',
     sentenceHint: '👇 మాట్లాడటానికి బొమ్మలు నొక్కండి',
+    numbersShown: 'చూపిస్తున్న సంఖ్యలు',
     quizPrompt: (w) => `${w} ఎక్కడ ఉంది?`,
     praise: 'శభాష్!',
     tryAgain: 'మళ్ళీ ప్రయత్నించు',
@@ -234,7 +268,9 @@ export const UI: Record<Language, UiStrings> = {
     tabLearn: 'கற்க',
     tabQuiz: 'விளையாடு',
     tabWrite: 'எழுது',
+    tabMusic: 'இசை',
     sentenceHint: '👇 பேச படங்களைத் தொடவும்',
+    numbersShown: 'காட்டப்படும் எண்கள்',
     quizPrompt: (w) => `${w} எங்கே?`,
     praise: 'சபாஷ்!',
     tryAgain: 'மீண்டும் முயற்சி செய்',
@@ -255,7 +291,9 @@ export const UI: Record<Language, UiStrings> = {
     tabLearn: 'ಕಲಿ',
     tabQuiz: 'ಆಡು',
     tabWrite: 'ಬರಿ',
+    tabMusic: 'ಸಂಗೀತ',
     sentenceHint: '👇 ಮಾತನಾಡಲು ಚಿತ್ರಗಳನ್ನು ಒತ್ತಿ',
+    numbersShown: 'ತೋರಿಸುತ್ತಿರುವ ಸಂಖ್ಯೆಗಳು',
     quizPrompt: (w) => `${w} ಎಲ್ಲಿದೆ?`,
     praise: 'ಭೇಷ್!',
     tryAgain: 'ಮತ್ತೆ ಪ್ರಯತ್ನಿಸು',
@@ -268,5 +306,51 @@ export const UI: Record<Language, UiStrings> = {
     breatheHold: 'ನಿಲ್ಲಿಸು',
     breatheOut: 'ಉಸಿರು ಹೊರಗೆ ಬಿಡು',
     whichOne: 'ಯಾವುದು ಬೇಕು?',
+  },
+  mr: {
+    tagline: 'माझा आवाज',
+    tabHome: 'होम',
+    tabTalk: 'बोल',
+    tabLearn: 'शिक',
+    tabQuiz: 'खेळ',
+    tabWrite: 'लिही',
+    tabMusic: 'संगीत',
+    sentenceHint: '👇 बोलण्यासाठी चित्रं दाबा',
+    numbersShown: 'दाखवलेले अंक',
+    quizPrompt: (w) => `${w} कुठे आहे?`,
+    praise: 'शाब्बास!',
+    tryAgain: 'पुन्हा प्रयत्न कर',
+    notEnoughWords: 'या विभागात सरावासाठी पुरेसे शब्द नाहीत.',
+    first: 'आधी',
+    then: 'मग',
+    videoWarn: 'एक मिनिट बाकी!',
+    videoOver: 'आजचा व्हिडिओचा वेळ संपला!',
+    breatheIn: 'श्वास घे',
+    breatheHold: 'थांब',
+    breatheOut: 'श्वास सोड',
+    whichOne: 'कोणतं?',
+  },
+  bn: {
+    tagline: 'আমার কণ্ঠ',
+    tabHome: 'হোম',
+    tabTalk: 'কথা',
+    tabLearn: 'শেখো',
+    tabQuiz: 'খেলো',
+    tabWrite: 'লেখো',
+    tabMusic: 'গান',
+    sentenceHint: '👇 কথা বলতে ছবিতে চাপো',
+    numbersShown: 'দেখানো সংখ্যা',
+    quizPrompt: (w) => `${w} কোথায়?`,
+    praise: 'সাবাশ!',
+    tryAgain: 'আবার চেষ্টা করো',
+    notEnoughWords: 'এই বিভাগে অনুশীলনের জন্য যথেষ্ট শব্দ নেই।',
+    first: 'আগে',
+    then: 'পরে',
+    videoWarn: 'এক মিনিট বাকি!',
+    videoOver: 'আজকের ভিডিওর সময় শেষ!',
+    breatheIn: 'শ্বাস নাও',
+    breatheHold: 'ধরে রাখো',
+    breatheOut: 'শ্বাস ছাড়ো',
+    whichOne: 'কোনটা?',
   },
 };

@@ -58,15 +58,23 @@ export function StoryPlayer({ story, language, rate, onClose }: StoryPlayerProps
     void sayPage(clamped);
   };
 
-  // start reading automatically when opened; stop cleanly when closed
+  /**
+   * Always open on the first page and read from there — including when a
+   * different story is opened into the same player. Without keying on the
+   * story, the previous book's page number (and its line of text) would still
+   * be on screen when the next one opened.
+   */
   useEffect(() => {
+    setPage(0);
     void playFrom(0);
     return () => {
       cancelledRef.current = true;
       window.speechSynthesis?.cancel();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [story.id]);
+
+  const finished = !playing && page === lines.length - 1;
 
   return (
     <div
@@ -110,10 +118,12 @@ export function StoryPlayer({ story, language, rate, onClose }: StoryPlayerProps
           </button>
           <button
             className="btn-speak story-play"
-            onClick={() => (playing ? stop() : void playFrom(page))}
-            aria-label={playing ? 'Stop' : 'Play'}
+            // At the end, ▶️ means "read it again" from page one — replaying
+            // only the last line is never what a child is asking for
+            onClick={() => (playing ? stop() : void playFrom(finished ? 0 : page))}
+            aria-label={playing ? 'Stop' : finished ? 'Read again' : 'Play'}
           >
-            {playing ? '⏹' : '▶️'}
+            {playing ? '⏹' : finished ? '🔁' : '▶️'}
           </button>
           <button
             className="btn-history story-nav"

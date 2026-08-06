@@ -27,6 +27,16 @@ export const SUBSCRIBE_URL =
   (import.meta.env.VITE_SUBSCRIBE_URL as string | undefined) ?? '';
 
 /**
+ * Your own endpoint that returns a generated picture for a tile.
+ *
+ * It must be a proxy you control (e.g. a Cloud Function), never a provider's
+ * API key: anything shipped inside the APK can be extracted from it and spent
+ * by whoever finds it. With no URL set, the editor simply hides the ✨ option.
+ */
+export const IMAGE_GEN_URL =
+  (import.meta.env.VITE_IMAGE_GEN_URL as string | undefined) ?? '';
+
+/**
  * Nothing is gated yet — deliberately. The child's board, tiles and speech
  * must never depend on a payment: a non-verbal child losing their voice
  * because a card expired is not an acceptable failure mode. Add the ids of

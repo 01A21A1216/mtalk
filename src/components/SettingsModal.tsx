@@ -6,6 +6,14 @@ import { APP_VERSION } from '../version';
 import { profileKey } from '../hooks/useProfiles';
 import { shareProgressReport } from '../services/progressReport';
 import { AccountsSection } from './AccountsSection';
+import { VoicePack } from './VoicePack';
+import { UserDirectory } from './UserDirectory';
+import { PrintSheet } from './PrintSheet';
+import { PACKS } from '../data/packs';
+import { exportObz, importBoardFile } from '../services/obf';
+import { CategoryManager } from './CategoryManager';
+import { ParentDashboard } from './ParentDashboard';
+import type { UsageMap } from '../services/analytics';
 import { SUBSCRIBE_URL, SUPPORT_EMAIL } from '../config';
 import { isOwner } from '../services/auth';
 import {
@@ -14,7 +22,15 @@ import {
   entitlementFor,
   saveEntitlement,
 } from '../services/subscription';
-import type { AgeMode, AppUser, CustomCategory, CustomStory, CustomTile, Profile, ScheduleStep, Settings, UserRole, VideoTile, Word } from '../types';
+import type { AgeMode, AppUser, Category, CustomCategory, CustomStory, CustomTile, HistoryEntry, Profile, ScheduleStep, Settings, UserRole, VideoTile, Word, WordStat } from '../types';
+
+/** Colours cycled through when a foreign board arrives as new categories */
+const IMPORT_COLORS: [string, string][] = [
+  ['#E8EAF6', '#283593'],
+  ['#E0F7FA', '#00838F'],
+  ['#FFF8E1', '#EF6C00'],
+  ['#F3E5F5', '#6A1B9A'],
+];
 
 const BACKUP_BASES = ['settings', 'mastery', 'usage', 'history', 'bigrams', 'cats', 'home'];
 
@@ -25,12 +41,19 @@ interface SettingsModalProps {
   activeProfileId: string;
   /** Signed-in grown-up — decides which sections are shown */
   user: AppUser;
+  /** Progress + Categories tabs */
+  usage: UsageMap;
+  masteryStats: Record<string, WordStat>;
+  history: HistoryEntry[];
+  /** Every category on this child's board, before hide/order preferences */
+  boardCategories: Category[];
+  wordIndex: Map<string, Word>;
   users: AppUser[];
   onCreateUser: (input: {
     name: string;
     role: UserRole;
     pin: string;
-    email?: string;
+    email: string;
     kidIds: string[];
   }) => Promise<void>;
   onUpdateUser: (id: string, patch: Partial<AppUser>) => void;
@@ -70,7 +93,7 @@ interface SettingsModalProps {
   choicePicks: Word[];
   onSetChoiceMode: (on: boolean, picks: Word[]) => void;
   onUpdate: (patch: Partial<Settings>) => void;
-  onAddTile: () => void;
+  onAddTile: (categoryId?: string) => void;
   onEditTile: (tile: CustomTile) => void;
   onRemoveTile: (id: string) => void;
   onClose: () => void;
@@ -101,6 +124,11 @@ export function SettingsModal({
   profiles,
   activeProfileId,
   user,
+  usage,
+  masteryStats,
+  history,
+  boardCategories,
+  wordIndex,
   users,
   onCreateUser,
   onUpdateUser,
@@ -163,6 +191,21 @@ export function SettingsModal({
   const [ownPin, setOwnPin] = useState('');
   const [ownPinMessage, setOwnPinMessage] = useState('');
   const [entitlement, setEntitlement] = useState(() => entitlementFor(user.id));
+  const [view, setView] = useState<'settings' | 'progress' | 'categories'>('settings');
+  const [printing, setPrinting] = useState<'book' | 'summary' | null>(null);
+
+  /**
+   * Puts the sheet in the DOM, prints it, then takes it out again. The print
+   * stylesheet hides the app and shows only the sheet, so this works offline
+   * with no popup window to be blocked.
+   */
+  const print = (kind: 'book' | 'summary') => {
+    setPrinting(kind);
+    window.setTimeout(() => {
+      window.print();
+      setPrinting(null);
+    }, 350);
+  };
 
   const exportBackup = () => {
     const data: Record<string, unknown> = { customTiles };
@@ -204,6 +247,73 @@ export function SettingsModal({
       setBackupMessage('That file could not be read.');
     }
   };
+  const obfRef = useRef<HTMLInputElement>(null);
+  const [obfMessage, setObfMessage] = useState('');
+
+  /** The child's whole board as a .obz a therapist's app can open */
+  const exportBoard = async () => {
+    setObfMessage('Packing the board…');
+    try {
+      const child = profiles.find((p) => p.id === profileId)?.name ?? 'MTalk';
+      const blob = await exportObz(boardCategories, settings.language, child);
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${child.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-board.obz`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      setObfMessage(`Saved ${Math.round(blob.size / 1024)} KB — open it in any AAC app that reads OBF.`);
+    } catch {
+      setObfMessage('That board could not be packed.');
+    }
+  };
+
+  /**
+   * Brings another app's board in as ordinary custom tiles, one category per
+   * board, so the parent can edit or delete anything that does not fit.
+   */
+  const importBoard = async (file: File | undefined) => {
+    if (!file) return;
+    setObfMessage('Reading the board…');
+    try {
+      const result = await importBoardFile(file);
+      if (result.tileCount === 0) {
+        setObfMessage('No tiles found in that file.');
+        return;
+      }
+      const key = profileKey('cats', profileId);
+      const existing: CustomCategory[] = JSON.parse(localStorage.getItem(key) ?? '[]');
+      const stamp = Date.now();
+      const added: CustomCategory[] = [];
+      result.boards.forEach((board, b) => {
+        const [color, colorDark] = IMPORT_COLORS[b % IMPORT_COLORS.length];
+        const id = `cc-obf-${stamp.toString(36)}-${b}`;
+        added.push({ id, name: board.name, emoji: '📥', color, colorDark });
+        board.tiles.forEach((tile, t) => {
+          void putTile({
+            id: `custom-obf-${stamp.toString(36)}-${b}-${t}`,
+            en: tile.label,
+            hi: '',
+            image: tile.image,
+            ...(tile.speak ? { speak: tile.speak } : {}),
+            createdAt: stamp + t,
+            profileId,
+            categoryId: id,
+          });
+        });
+      });
+      localStorage.setItem(key, JSON.stringify([...existing, ...added]));
+      const notes = [
+        `${result.tileCount} tiles in ${result.boards.length} board${result.boards.length === 1 ? '' : 's'}`,
+      ];
+      if (result.linkedImages) notes.push(`${result.linkedImages} pictures are web links and need internet`);
+      if (result.droppedSounds) notes.push(`${result.droppedSounds} recorded sounds could not be carried across`);
+      setObfMessage(`Imported ${notes.join('; ')}. Reloading…`);
+      window.setTimeout(() => window.location.reload(), 1600);
+    } catch {
+      setObfMessage('That file could not be read as an OBF or OBZ board.');
+    }
+  };
+
   const gate = useMemo(() => {
     const a = 2 + Math.floor(Math.random() * 6);
     const b = 2 + Math.floor(Math.random() * 6);
@@ -261,13 +371,65 @@ export function SettingsModal({
         ) : (
           <div className="settings">
             <header className="settings-bar">
-              <h2>⚙️ Settings</h2>
+              <div className="segmented settings-tabs">
+                <button
+                  className={view === 'settings' ? 'seg-active' : ''}
+                  onClick={() => setView('settings')}
+                >
+                  ⚙️ Settings
+                </button>
+                <button
+                  className={view === 'progress' ? 'seg-active' : ''}
+                  onClick={() => setView('progress')}
+                >
+                  📊 Progress
+                </button>
+                <button
+                  className={view === 'categories' ? 'seg-active' : ''}
+                  onClick={() => setView('categories')}
+                >
+                  📁 Categories
+                </button>
+              </div>
               <button className="settings-close" onClick={onClose} aria-label="Close settings">
                 ✖
               </button>
             </header>
 
-            <div className="settings-body">
+            {view === 'progress' && (
+              <div className="settings-body">
+                <ParentDashboard
+                  kids={profiles}
+                  activeChildId={activeProfileId}
+                  usage={usage}
+                  stats={masteryStats}
+                  history={history}
+                  categories={boardCategories}
+                  wordIndex={wordIndex}
+                  settings={settings}
+                  language={settings.language}
+                />
+              </div>
+            )}
+
+            {view === 'categories' && (
+              <div className="settings-body">
+                <CategoryManager
+                  categories={boardCategories}
+                  customCategories={customCategories}
+                  customTiles={customTiles}
+                  onAddTile={onAddTile}
+                  onEditTile={onEditTile}
+                  settings={settings}
+                  language={settings.language}
+                  onUpdate={onUpdate}
+                  onAddCategory={onAddCategory}
+                  onRemoveCategory={onRemoveCategory}
+                />
+              </div>
+            )}
+
+            <div className="settings-body" hidden={view !== 'settings'}>
             <section>
               <h3>App language / भाषा / భాష</h3>
               <p className="ft-hint">
@@ -365,7 +527,6 @@ export function SettingsModal({
               </div>
             </section>
 
-            {isAdmin && (
             <section>
               <h3>👨‍👩‍👧 Kids ({profiles.length})</h3>
               <div className="custom-tile-list">
@@ -410,7 +571,6 @@ export function SettingsModal({
                 </button>
               </div>
             </section>
-            )}
 
             <section>
               <h3>📁 Tile categories ({customCategories.length})</h3>
@@ -646,7 +806,7 @@ export function SettingsModal({
                   </div>
                 ))}
               </div>
-              <button className="btn-secondary btn-add-tile" onClick={onAddTile}>
+              <button className="btn-secondary btn-add-tile" onClick={() => onAddTile()}>
                 ➕ Add a tile (photo + voice)
               </button>
             </section>
@@ -879,6 +1039,53 @@ export function SettingsModal({
             </section>
 
             <section>
+              <h3>💬 Sentence starters</h3>
+              <p className="ft-hint">
+                Frames above the board — “I want …”, “I see …”, “Help me …”.
+                Tap a frame, then a picture, and the whole phrase is spoken.
+                Modelling these and pausing is how two-word phrases start.
+              </p>
+              <label className="toggle-row">
+                <input
+                  type="checkbox"
+                  checked={settings.sentenceStarters}
+                  onChange={(e) => onUpdate({ sentenceStarters: e.target.checked })}
+                />
+                <span>Show sentence starters</span>
+              </label>
+            </section>
+
+            <VoicePack
+              profileId={profileId}
+              childName={profiles.find((p) => p.id === activeProfileId)?.name ?? 'your child'}
+              language={settings.language}
+              wordIndex={wordIndex}
+            />
+
+            <section>
+              <h3>🔢 Counting</h3>
+              <p className="ft-hint">
+                How far the Numbers category counts. The child can also add ten
+                at a time from the board itself, so this is just a shortcut.
+              </p>
+              <div className="segmented">
+                {[10, 20, 50, 100, 500, 1000].map((n) => (
+                  <button
+                    key={n}
+                    className={settings.numberLimit === n ? 'seg-active' : ''}
+                    onClick={() => onUpdate({ numberLimit: n })}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+              <p className="ft-hint">
+                Showing 1–{settings.numberLimit}. Big boards take longer to
+                scroll — most children work in tens.
+              </p>
+            </section>
+
+            <section>
               <h3>🔲 Tile size</h3>
               <div className="segmented">
                 {(
@@ -941,7 +1148,7 @@ export function SettingsModal({
               </div>
             </section>
 
-            {kidLockAvailable && isAdmin && (
+            {kidLockAvailable && (
               <section>
                 <h3>🔒 Kid lock (this device)</h3>
                 <p className="ft-hint">
@@ -983,7 +1190,9 @@ export function SettingsModal({
               />
             )}
 
-            {isAdmin && (
+            {/* the owner alone sees every account, across every tablet */}
+            {isOwner(user) && <UserDirectory />}
+
             <section>
               <h3>💾 Backup</h3>
               <div className="modal-actions" style={{ justifyContent: 'flex-start' }}>
@@ -1003,7 +1212,31 @@ export function SettingsModal({
               </div>
               {backupMessage && <p className="progress-line">{backupMessage}</p>}
             </section>
-            )}
+
+            <section>
+              <h3>🔁 Share with other AAC apps</h3>
+              <p className="ft-hint">
+                Open Board Format is what speech therapists' apps read and
+                write. Exporting hands this child's whole board to a therapist;
+                importing brings their board in as tiles you can edit.
+              </p>
+              <div className="modal-actions" style={{ justifyContent: 'flex-start' }}>
+                <button className="btn-secondary" onClick={() => void exportBoard()}>
+                  📤 Export board (.obz)
+                </button>
+                <button className="btn-secondary" onClick={() => obfRef.current?.click()}>
+                  📥 Import .obf / .obz
+                </button>
+                <input
+                  ref={obfRef}
+                  type="file"
+                  accept=".obf,.obz,application/json,application/zip"
+                  hidden
+                  onChange={(e) => void importBoard(e.target.files?.[0])}
+                />
+              </div>
+              {obfMessage && <p className="progress-line">{obfMessage}</p>}
+            </section>
 
             <section>
               <h3>💳 Subscription</h3>
@@ -1090,6 +1323,59 @@ export function SettingsModal({
             </section>
 
             <section>
+              <h3>🎁 Content packs</h3>
+              <p className="ft-hint">
+                Extra words for the days that are not ordinary — a festival, a
+                doctor's appointment, the first week of school. Switch one on a
+                few days before, and off again after, so the board stays calm.
+              </p>
+              <div className="pack-list">
+                {PACKS.map((pack) => {
+                  const on = settings.enabledPackIds?.includes(pack.id);
+                  return (
+                    <button
+                      key={pack.id}
+                      className={`pack-chip ${on ? 'pack-on' : ''}`}
+                      aria-pressed={on}
+                      onClick={() =>
+                        onUpdate({
+                          enabledPackIds: on
+                            ? settings.enabledPackIds.filter((id) => id !== pack.id)
+                            : [...(settings.enabledPackIds ?? []), pack.id],
+                        })
+                      }
+                    >
+                      <span className="pack-emoji" aria-hidden="true">{pack.emoji}</span>
+                      <span>{pack.en}</span>
+                      <small>{pack.words.length} words</small>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section>
+              <h3>🖨️ Print & share</h3>
+              <p className="ft-hint">
+                For the days the tablet is flat, and for the people who need to
+                know how {profiles.find((p) => p.id === activeProfileId)?.name ?? 'your child'}{' '}
+                is getting on.
+              </p>
+              <div className="modal-actions" style={{ justifyContent: 'flex-start' }}>
+                <button className="btn-secondary" onClick={() => print('book')}>
+                  📖 Communication book
+                </button>
+                <button className="btn-secondary" onClick={() => print('summary')}>
+                  🧑‍⚕️ Summary for therapy or school
+                </button>
+              </div>
+              <p className="ft-hint">
+                The book prints six big pictures a page. The summary is one
+                page and carries only the child's first name.
+              </p>
+            </section>
+
+            <section>
               <h3>🔑 My PIN</h3>
               <p className="ft-hint">Change the PIN you use to sign in on this tablet.</p>
               <div className="add-row">
@@ -1120,6 +1406,21 @@ export function SettingsModal({
               {ownPinMessage && <p className="progress-line">{ownPinMessage}</p>}
             </section>
             </div>
+
+            {/* only in the DOM while the print dialog is open */}
+            {printing && (
+              <PrintSheet
+                kind={printing}
+                childName={profiles.find((p) => p.id === activeProfileId)?.name ?? 'Child'}
+                language={settings.language}
+                settings={settings}
+                wordIndex={wordIndex}
+                customTiles={customTiles.map((t) => ({ id: t.id, en: t.en, image: t.image }))}
+                usage={usage}
+                stats={masteryStats}
+                categories={boardCategories}
+              />
+            )}
 
             <footer className="settings-foot">
               <p className="version-line">

@@ -1,4 +1,4 @@
-export type Language = 'en' | 'hi' | 'te' | 'ta' | 'kn';
+export type Language = 'en' | 'hi' | 'te' | 'ta' | 'kn' | 'mr' | 'bn';
 
 /** Age tiers: 1 = Little (1-4 yrs), 2 = Junior (5-9 yrs), 3 = Senior (10-15 yrs) */
 export type AgeMode = 1 | 2 | 3;
@@ -56,6 +56,8 @@ export interface CustomTile {
   hi: string;
   image: string;
   audio?: string;
+  /** What to say when it differs from the label (imported OBF vocalization) */
+  speak?: string;
   createdAt: number;
   /** Owning child profile (legacy tiles belong to the first profile) */
   profileId?: string;
@@ -152,6 +154,16 @@ export interface Settings {
   videoLimitMins: number;
   /** Tile size override: 0 = follow age mode, else px column width */
   tileSize: 0 | 100 | 130 | 170 | 210;
+  /** How far the Numbers category counts, 10…1000 (grown-up or on-screen control) */
+  numberLimit: number;
+  /** Show "I want …" style frames above the board */
+  sentenceStarters: boolean;
+  /** Content packs switched on for this child (festivals, doctor, school) */
+  enabledPackIds: string[];
+  /** Categories switched off for this child — hidden, never deleted */
+  hiddenCategoryIds: string[];
+  /** Category ids in the order the child sees them; unlisted ones follow */
+  categoryOrder: string[];
 }
 
 /** One step in the full-day visual schedule */

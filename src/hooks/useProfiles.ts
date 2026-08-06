@@ -61,13 +61,15 @@ export function useProfiles() {
     setStore((prev) => ({ ...prev, activeId: id }));
   }, []);
 
-  const addProfile = useCallback((name: string) => {
+  /** Returns the new profile so the caller can assign it to a parent account */
+  const addProfile = useCallback((name: string): Profile => {
     const profile: Profile = {
       id: `p${Date.now().toString(36)}`,
       name: name.trim() || 'Kid',
       emoji: AVATARS[Math.floor(Math.random() * AVATARS.length)],
     };
     setStore((prev) => ({ list: [...prev.list, profile], activeId: profile.id }));
+    return profile;
   }, []);
 
   const removeProfile = useCallback((id: string) => {

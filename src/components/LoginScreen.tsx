@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { playPop } from '../services/speech';
-import { isOwner, lockoutRemaining, strongHashAvailable } from '../services/auth';
+import { isEmail, isOwner, lockoutRemaining, strongHashAvailable } from '../services/auth';
 import { cloudEnabled, cloudResetPassword, cloudSignIn, cloudSignUp } from '../services/authCloud';
 import { SUPPORT_EMAIL } from '../config';
 import { APP_VERSION } from '../version';
@@ -18,7 +18,7 @@ const ROLE_BADGE: Record<UserRole, string> = {
 export interface SetupInput {
   name: string;
   pin: string;
-  email?: string;
+  email: string;
 }
 
 interface LoginScreenProps {
@@ -122,6 +122,8 @@ export function LoginScreen({
     pinRef.current = next;
     setPinLen(next.length);
   };
+  /** A brand-new grown-up creating their own account on an in-use tablet */
+  const [signingUp, setSigningUp] = useState(false);
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -165,6 +167,15 @@ export function LoginScreen({
 
   const submitSetup = async () => {
     if (busy) return;
+    if (!isEmail(setupEmail)) {
+      setError('Enter the email address for this account.');
+      return;
+    }
+    // Someone signing up on a tablet that already knows them should sign in
+    if (users.some((u) => u.email === setupEmail.trim().toLowerCase())) {
+      setError('That email already has an account here — sign in instead.');
+      return;
+    }
     if (setupPin.length < PIN_MIN) {
       setError(`PIN must be at least ${PIN_MIN} digits.`);
       return;
@@ -175,18 +186,21 @@ export function LoginScreen({
     }
     setBusy(true);
     try {
-      // An optional cloud account is created first: if Firebase rejects it,
-      // nothing local has changed yet and the message is still fixable.
-      if (cloudEnabled() && setupEmail.trim() && setupPassword) {
+      // The cloud account is created first: if Firebase rejects it, nothing
+      // local has changed yet and the message is still fixable.
+      if (cloudEnabled() && setupPassword) {
         await cloudSignUp(setupEmail, setupPassword);
       }
-      await onSetup({
-        name,
-        pin: setupPin,
-        email: setupEmail.trim() ? setupEmail : undefined,
-      });
+      await onSetup({ name, pin: setupPin, email: setupEmail.trim() });
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not create the account.');
+      const message = e instanceof Error ? e.message : 'Could not create the account.';
+      // An already-registered address is not a reason to block setup — the
+      // grown-up simply already has a cloud account for this email.
+      if (/already exists/i.test(message)) {
+        await onSetup({ name, pin: setupPin, email: setupEmail.trim() });
+        return;
+      }
+      setError(message);
     } finally {
       setBusy(false);
     }
@@ -221,15 +235,18 @@ export function LoginScreen({
     </a>
   );
 
-  // ---------------------------------------------------------- first-run setup
-  if (needsSetup) {
+  // ------------------------------------------- first run, or a new sign-up
+  if (needsSetup || signingUp) {
     return (
       <div className="profile-screen login-screen">
         {brand}
-        <h1 className="profile-question">Welcome — set up this tablet</h1>
+        <h1 className="profile-question">
+          {needsSetup ? 'Welcome — set up this tablet' : 'Create your account'}
+        </h1>
         <p className="login-sub">
-          You are the grown-up in charge here: you add the children, other
-          parents or carers, and keep the backups. It takes a minute.
+          {needsSetup
+            ? 'You are the grown-up in charge here: you add the children, other parents or carers, and keep the backups. It takes a minute.'
+            : 'Your own account on this tablet, with your own children and settings. Other families here cannot see them.'}
         </p>
         <div className="login-card">
           <label className="login-label" htmlFor="setup-name">Your name</label>
@@ -243,6 +260,24 @@ export function LoginScreen({
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
+
+          <label className="login-label" htmlFor="setup-email">Your email</label>
+          <input
+            id="setup-email"
+            className="text-field"
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            value={setupEmail}
+            onChange={(e) => {
+              setSetupEmail(e.target.value);
+              setError('');
+            }}
+          />
+          <p className="ft-hint">
+            Used to identify this account, to reach you about the app, and to
+            sign in on another tablet.
+          </p>
 
           <label className="login-label" htmlFor="setup-pin">
             Choose a PIN ({PIN_MIN}–{PIN_MAX} digits)
@@ -279,22 +314,14 @@ export function LoginScreen({
           {cloudEnabled() && (
             <>
               <p className="ft-hint login-divider">
-                Optional — add an email account so you can sign in on another
-                tablet. The PIN above keeps working with no internet.
+                Optional — set a password to also sign in with this email on
+                another tablet. The PIN above keeps working with no internet.
               </p>
-              <input
-                className="text-field"
-                type="email"
-                autoComplete="email"
-                placeholder="Email (optional)"
-                value={setupEmail}
-                onChange={(e) => setSetupEmail(e.target.value)}
-              />
               <input
                 className="text-field"
                 type="password"
                 autoComplete="new-password"
-                placeholder="Password (6+ characters)"
+                placeholder="Password (6+ characters, optional)"
                 value={setupPassword}
                 onChange={(e) => setSetupPassword(e.target.value)}
               />
@@ -311,9 +338,21 @@ export function LoginScreen({
           {error && <p className="gate-error">{error}</p>}
 
           <button className="btn-primary login-go" disabled={busy} onClick={() => void submitSetup()}>
-            {busy ? 'Creating…' : 'Start using MTalk'}
+            {busy ? 'Creating…' : needsSetup ? 'Start using MTalk' : 'Create account'}
           </button>
         </div>
+
+        {!needsSetup && (
+          <button
+            className="btn-secondary"
+            onClick={() => {
+              setSigningUp(false);
+              setError('');
+            }}
+          >
+            ← I already have an account
+          </button>
+        )}
         {support}
       </div>
     );
@@ -358,6 +397,17 @@ export function LoginScreen({
             ✉️ Sign in with email instead
           </button>
         )}
+        <div className="login-links">
+          <button
+            className="btn-secondary"
+            onClick={() => {
+              setSigningUp(true);
+              setError('');
+            }}
+          >
+            ➕ New here? Create an account
+          </button>
+        </div>
         {support}
       </div>
     );
@@ -474,6 +524,15 @@ export function LoginScreen({
             {mode === 'pin' ? '✉️ Use email' : '🔢 Use PIN'}
           </button>
         )}
+        <button
+          className="btn-secondary"
+          onClick={() => {
+            setSigningUp(true);
+            setError('');
+          }}
+        >
+          ➕ Create an account
+        </button>
       </div>
       {support}
     </div>

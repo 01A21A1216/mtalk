@@ -35,8 +35,16 @@ export const Tile = memo(function Tile({ word, language, motherTongue, showBoth,
       onAnimationEnd={() => setBouncing(false)}
       aria-label={primary}
     >
+      {/* photos on custom tiles: decoded off the main thread, and the ones
+          scrolled out of view are skipped — it adds up on a long board */}
       {word.image ? (
-        <img src={word.image} alt="" className="tile-image" />
+        <img
+          src={word.image}
+          alt=""
+          className="tile-image"
+          loading="lazy"
+          decoding="async"
+        />
       ) : (
         <span className="tile-emoji" aria-hidden="true">
           {word.emoji}

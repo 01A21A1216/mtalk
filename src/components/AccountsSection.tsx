@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { isOwner } from '../services/auth';
+import { isEmail, isOwner } from '../services/auth';
+import { OWNER_EMAIL, isOwnerEmail } from '../config';
 import type { AppUser, Profile, UserRole } from '../types';
 
 interface AccountsSectionProps {
@@ -10,7 +11,7 @@ interface AccountsSectionProps {
     name: string;
     role: UserRole;
     pin: string;
-    email?: string;
+    email: string;
     kidIds: string[];
   }) => Promise<void>;
   onUpdate: (id: string, patch: Partial<AppUser>) => void;
@@ -38,6 +39,8 @@ export function AccountsSection({
   const [kidIds, setKidIds] = useState<string[]>([]);
   const [message, setMessage] = useState('');
   const [resetFor, setResetFor] = useState<string | null>(null);
+  const [emailFor, setEmailFor] = useState<string | null>(null);
+  const [newEmail, setNewEmail] = useState('');
   const [resetPin, setResetPin] = useState('');
 
   const toggleKid = (id: string) =>
@@ -52,11 +55,15 @@ export function AccountsSection({
       setMessage('PIN must be at least 4 digits.');
       return;
     }
+    if (!isEmail(email)) {
+      setMessage("Enter the parent's email address.");
+      return;
+    }
     if (role === 'parent' && kidIds.length === 0) {
       setMessage('Pick at least one child this parent looks after.');
       return;
     }
-    if (email.trim() && users.some((u) => u.email === email.trim().toLowerCase())) {
+    if (users.some((u) => u.email === email.trim().toLowerCase())) {
       setMessage('Another account already uses that email.');
       return;
     }
@@ -64,7 +71,7 @@ export function AccountsSection({
       name,
       role,
       pin,
-      email: email.trim() || undefined,
+      email: email.trim(),
       kidIds: role === 'admin' ? [] : kidIds,
     });
     setName('');
@@ -90,6 +97,16 @@ export function AccountsSection({
         see the children assigned to them.
       </p>
 
+      {/* Without an account carrying the owner's address, nothing on this
+          tablet is linked to the person who supports it */}
+      {!users.some(isOwner) && (
+        <p className="account-owner-hint">
+          👑 The app owner ({OWNER_EMAIL}) has no account on this tablet. Give
+          an admin account that email — with <b>✉️ Email</b> — or add one, and
+          it becomes the owner account.
+        </p>
+      )}
+
       <div className="custom-tile-list">
         {users.map((u) => (
           <div key={u.id} className="custom-tile-row account-row">
@@ -102,13 +119,25 @@ export function AccountsSection({
               <small className="account-meta">
                 {isOwner(u) ? 'App owner · support' : u.role === 'admin' ? 'Admin' : 'Parent'} ·{' '}
                 {kidNames(u)}
-                {u.email ? ` · ${u.email}` : ''}
+                {u.email ? ` · ${u.email}` : ' · no email yet'}
               </small>
             </span>
             <button
               className="btn-secondary btn-small"
               onClick={() => {
+                setEmailFor(emailFor === u.id ? null : u.id);
+                setNewEmail(u.email ?? '');
+                setResetFor(null);
+                setMessage('');
+              }}
+            >
+              ✉️ Email
+            </button>
+            <button
+              className="btn-secondary btn-small"
+              onClick={() => {
                 setResetFor(resetFor === u.id ? null : u.id);
+                setEmailFor(null);
                 setResetPin('');
                 setMessage('');
               }}
@@ -141,6 +170,42 @@ export function AccountsSection({
           </div>
         ))}
       </div>
+
+      {emailFor && (
+        <div className="add-row">
+          <input
+            className="text-field add-row-field"
+            type="email"
+            placeholder="Email for this account"
+            value={newEmail}
+            onChange={(e) => setNewEmail(e.target.value)}
+          />
+          <button
+            className="btn-secondary"
+            onClick={() => {
+              const email = newEmail.trim().toLowerCase();
+              if (!isEmail(email)) {
+                setMessage('That does not look like an email address.');
+                return;
+              }
+              if (users.some((u) => u.id !== emailFor && u.email === email)) {
+                setMessage('Another account already uses that email.');
+                return;
+              }
+              onUpdate(emailFor, { email });
+              setEmailFor(null);
+              // useAuth forces the owner's address back to admin, so say so
+              setMessage(
+                isOwnerEmail(email)
+                  ? 'Saved — that is the app owner, so the account is now the owner account.'
+                  : 'Email saved.',
+              );
+            }}
+          >
+            Save email
+          </button>
+        </div>
+      )}
 
       {resetFor && (
         <div className="add-row">
@@ -195,7 +260,7 @@ export function AccountsSection({
         <input
           className="text-field add-row-field"
           type="email"
-          placeholder="Email (optional — for cloud sign-in)"
+          placeholder="Email (required)"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />

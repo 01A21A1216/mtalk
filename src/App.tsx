@@ -35,12 +35,21 @@ const StoryEditor = lazy(() =>
 const CalmCorner = lazy(() =>
   import('./components/CalmCorner').then((m) => ({ default: m.CalmCorner })),
 );
+// the whole music room, including its synthesiser, loads only when opened
+const MusicRoom = lazy(() =>
+  import('./components/MusicRoom').then((m) => ({ default: m.MusicRoom })),
+);
 import { CATEGORIES, QUICK_WORDS } from './data/vocabulary';
+import { NUMBERS_MAX, NUMBERS_START, NUMBERS_STEP, numberWords } from './data/numbers';
+import { starterWords } from './data/starters';
+import { PACKS } from './data/packs';
+import { INSTRUMENTS, type Instrument } from './data/instruments';
 import { STORIES } from './data/stories';
 import { SCRIPT_SETS, TRACE_SETS } from './data/traceSets';
 import { UI, sectionLabel, wordLabel } from './i18n';
 import { useAuth } from './hooks/useAuth';
 import { canAccessKid } from './services/auth';
+import { applyCategoryPrefs } from './services/categories';
 import { useCustomCategories } from './hooks/useCustomCategories';
 import { useCustomStories } from './hooks/useCustomStories';
 import { useCustomTiles } from './hooks/useCustomTiles';
@@ -57,22 +66,24 @@ import { useVideoTime } from './hooks/useVideoTime';
 import { shareSentenceCard } from './services/shareCard';
 import { playWordSfx } from './services/soundEffects';
 import { playPop, playSequence, speakWord } from './services/speech';
+import { loadVoicePack } from './services/voicePack';
 import type { AppUser, Category, CustomTile, Profile, UserRole, Word } from './types';
 
 const MAX_SENTENCE_WORDS = 10;
 
-type Screen = 'home' | 'talk' | 'learn' | 'quiz' | 'write';
+type Screen = 'home' | 'talk' | 'learn' | 'quiz' | 'write' | 'music';
 
 const SCREEN_TABS: {
   id: Screen;
   emoji: string;
-  labelKey: 'tabHome' | 'tabTalk' | 'tabLearn' | 'tabQuiz' | 'tabWrite';
+  labelKey: 'tabHome' | 'tabTalk' | 'tabLearn' | 'tabQuiz' | 'tabWrite' | 'tabMusic';
 }[] = [
   { id: 'home', emoji: '🏠', labelKey: 'tabHome' },
   { id: 'talk', emoji: '💬', labelKey: 'tabTalk' },
   { id: 'learn', emoji: '🎓', labelKey: 'tabLearn' },
   { id: 'quiz', emoji: '🎯', labelKey: 'tabQuiz' },
   { id: 'write', emoji: '✍️', labelKey: 'tabWrite' },
+  { id: 'music', emoji: '🎵', labelKey: 'tabMusic' },
 ];
 
 /**
@@ -89,6 +100,23 @@ export default function App() {
   const visible = useMemo(
     () => (user ? profiles.filter((p) => canAccessKid(user, p.id)) : []),
     [profiles, user],
+  );
+
+  /**
+   * A parent only sees children on their own list, so a child they add has to
+   * be attached to their account — otherwise it would vanish the moment it was
+   * created. Admins see every child, so there is nothing to attach.
+   */
+  const addKidFor = useCallback(
+    (who: AppUser, name: string) => {
+      const created = addProfile(name);
+      if (who.role === 'parent') {
+        auth.updateUser(who.id, { kidIds: [...who.kidIds, created.id] });
+      }
+      setActive(created.id);
+      setPickerOpen(false);
+    },
+    [addProfile, auth, setActive],
   );
 
   // A parent must never land on a child they are not responsible for
@@ -111,7 +139,9 @@ export default function App() {
         users={auth.users}
         needsSetup={auth.needsSetup}
         onSetup={async ({ name, pin, email }) => {
-          const created = await auth.createUser({ name, role: 'admin', pin, email });
+          // Whoever sets up a family tablet is a parent; makeUser promotes the
+          // app owner's own email to admin automatically.
+          const created = await auth.createUser({ name, role: 'parent', pin, email });
           auth.signInAs(created.id, true);
         }}
         onSignIn={auth.signIn}
@@ -124,19 +154,11 @@ export default function App() {
 
   if (!kid) {
     return (
-      <div className="profile-screen login-screen">
-        <div className="brand profile-brand">
-          <span className="brand-logo" aria-hidden="true">🗣️</span>
-          <span className="brand-name">MTalk</span>
-        </div>
-        <h1 className="profile-question">No children yet</h1>
-        <p className="login-sub">
-          Ask an admin to add a child to your account in ⚙️ Settings → Accounts.
-        </p>
-        <button className="btn-secondary" onClick={auth.signOut}>
-          🚪 Sign out
-        </button>
-      </div>
+      <AddFirstKid
+        userName={user.name}
+        onAdd={(name) => addKidFor(user, name)}
+        onSignOut={auth.signOut}
+      />
     );
   }
 
@@ -160,7 +182,7 @@ export default function App() {
       user={user}
       users={auth.users}
       onSwitchProfile={() => setPickerOpen(true)}
-      onAddProfile={addProfile}
+      onAddProfile={(name) => addKidFor(user, name)}
       onRemoveProfile={(id) => {
         removeProfile(id);
         auth.forgetKid(id);
@@ -179,6 +201,61 @@ export default function App() {
   );
 }
 
+/**
+ * Shown when the signed-in grown-up has no children yet — the first thing a
+ * parent sees after setting up. It has to carry its own input: the ⚙️ button
+ * lives on the board, and there is no board until a child exists.
+ */
+function AddFirstKid({
+  userName,
+  onAdd,
+  onSignOut,
+}: {
+  userName: string;
+  onAdd: (name: string) => void;
+  onSignOut: () => void;
+}) {
+  const [name, setName] = useState('');
+
+  return (
+    <div className="profile-screen login-screen">
+      <div className="brand profile-brand">
+        <span className="brand-logo" aria-hidden="true">🗣️</span>
+        <span className="brand-name">MTalk</span>
+      </div>
+      <h1 className="profile-question">Welcome, {userName}</h1>
+      <p className="login-sub">
+        Who are we setting this up for? Add your child and their board is ready
+        straight away. You can add more children later in ⚙️ Settings.
+      </p>
+      <div className="login-card">
+        <label className="login-label" htmlFor="first-kid">Your child's name</label>
+        <input
+          id="first-kid"
+          className="text-field"
+          type="text"
+          autoFocus
+          maxLength={20}
+          placeholder="e.g. Ravi"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && name.trim() && onAdd(name)}
+        />
+        <button
+          className="btn-primary login-go"
+          disabled={!name.trim()}
+          onClick={() => onAdd(name)}
+        >
+          ➕ Add child
+        </button>
+      </div>
+      <button className="btn-secondary" onClick={onSignOut}>
+        🚪 Sign out
+      </button>
+    </div>
+  );
+}
+
 interface MTalkAppProps {
   profile: Profile;
   profiles: Profile[];
@@ -191,7 +268,7 @@ interface MTalkAppProps {
     name: string;
     role: UserRole;
     pin: string;
-    email?: string;
+    email: string;
     kidIds: string[];
   }) => Promise<void>;
   onUpdateUser: (id: string, patch: Partial<AppUser>) => void;
@@ -215,11 +292,17 @@ function MTalkApp({
   onSignOut,
 }: MTalkAppProps) {
   const { settings, update } = useSettings(profile.id);
+
+  // a child's recorded words must be in memory before the first tap, since
+  // speech cannot wait on a database read mid-tap
+  useEffect(() => {
+    void loadVoicePack(profile.id);
+  }, [profile.id]);
   const { tiles: customTiles, addTile, updateTile, removeTile } = useCustomTiles(profile.id);
   const { categories: customCategories, addCategory, removeCategory } = useCustomCategories(profile.id);
   const { pinnedIds, addPin, removePin } = useHome(profile.id);
   const { stats, record, masteredCount, practicedCount } = useMastery(profile.id);
-  const { recordUse, topWordIds, usedThisWeek, newThisWeek } = useUsage(profile.id);
+  const { usage, recordUse, topWordIds, usedThisWeek, newThisWeek } = useUsage(profile.id);
   const { history, addEntry } = useHistory(profile.id);
   const { recordPair, suggestNext } = useBigrams(profile.id);
   const { videos, addVideo, removeVideo } = useVideos(profile.id);
@@ -235,11 +318,14 @@ function MTalkApp({
   const [speaking, setSpeaking] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [editorTile, setEditorTile] = useState<CustomTile | null>(null);
+  /** Category a newly added tile starts in, when added from Settings → Categories */
+  const [editorCategory, setEditorCategory] = useState<string | undefined>();
   const [editorOpen, setEditorOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [scanIndex, setScanIndex] = useState(0);
   const [celebrate, setCelebrate] = useState(false);
   const [writeSetId, setWriteSetId] = useState<string | null>('letters');
+  const [instrument, setInstrument] = useState<Instrument>('piano');
   const [activeStoryId, setActiveStoryId] = useState<string | null>(null);
   const [activeVideo, setActiveVideo] = useState<{ videoId: string; title: string } | null>(null);
   const { remainingSeconds, addSecond, resetToday } = useVideoTime(
@@ -255,6 +341,7 @@ function MTalkApp({
     level: 1,
     image: t.image,
     audio: t.audio,
+    ...(t.speak ? { speakEn: t.speak, speakHi: t.speak } : {}),
   });
 
   // Parent-created tiles without a category become "My Words" at the top of Talk
@@ -356,7 +443,10 @@ function MTalkApp({
     );
     // parent-made social stories join the built-in Stories category
     const base = CATEGORIES.map((c) =>
-      c.id === 'stories' && customStories.length > 0
+      c.id === 'numbers'
+        ? // every counting tile is generated, so 1–10 look exactly like 11+
+          { ...c, words: numberWords(settings.numberLimit) }
+        : c.id === 'stories' && customStories.length > 0
         ? {
             ...c,
             words: [
@@ -376,17 +466,44 @@ function MTalkApp({
           }
         : c,
     );
-    return [...extras, ...base];
-  }, [favoritesCategory, myWordsCategory, customCategoryList, videosCategory, customStories]);
+    // packs sit after the child's own words and before the built-in board
+    const packs = PACKS.filter((p) => settings.enabledPackIds?.includes(p.id));
+    return [...extras, ...packs, ...base];
+  }, [
+    favoritesCategory,
+    myWordsCategory,
+    customCategoryList,
+    videosCategory,
+    customStories,
+    settings.numberLimit,
+    settings.enabledPackIds,
+  ]);
 
-  const groupCategories = allCategories.filter((c) => {
+  // The parent's per-child order and hide list, applied before every other
+  // filter so the child's board reflects Settings → Categories exactly
+  const starters = useMemo(
+    () => starterWords(settings.language),
+    [settings.language],
+  );
+
+  const preferredCategories = useMemo(
+    () =>
+      applyCategoryPrefs(
+        allCategories,
+        settings.categoryOrder,
+        settings.hiddenCategoryIds,
+      ),
+    [allCategories, settings.categoryOrder, settings.hiddenCategoryIds],
+  );
+
+  const groupCategories = preferredCategories.filter((c) => {
     if (c.level > settings.ageMode) return false;
     if (screen === 'quiz') {
       // quiz can practise any category with enough visible words (not videos)
       if (c.id === 'videos') return false;
       return c.words.filter((w) => w.level <= settings.ageMode).length >= 2;
     }
-    if (screen === 'home' || screen === 'write') return false;
+    if (screen === 'home' || screen === 'write' || screen === 'music') return false;
     return (c.group ?? 'talk') === screen;
   });
 
@@ -592,6 +709,28 @@ function MTalkApp({
 
       <QuickBar language={settings.language} onTap={handleQuickTap} />
 
+      {/* Sentence starters: tap a frame, then a tile — "I want" + "juice".
+          The frame goes into the strip like any word, so Speak reads it all. */}
+      {boardScreen && settings.sentenceStarters && !choiceMode && (
+        <div className="starters" aria-label="Sentence starters">
+          {starters.map((frame) => (
+            <button
+              key={frame.id}
+              className="starter-chip"
+              onClick={() => {
+                playPop();
+                speakWord(frame, settings.language, settings.speechRate);
+                setSentence((prev) =>
+                  prev.length >= MAX_SENTENCE_WORDS ? prev : [...prev, frame],
+                );
+              }}
+            >
+              <span aria-hidden="true">{frame.emoji}</span> {frame.en}
+            </button>
+          ))}
+        </div>
+      )}
+
       {boardScreen && screen === 'home' && schedule.steps.length > 0 && (
         <DaySchedule
           steps={schedule.steps}
@@ -708,7 +847,30 @@ function MTalkApp({
               </button>
             ))}
           </div>
-          {screen === 'home' ? null : screen === 'write' ? (
+          {screen === 'home' ? null : screen === 'music' ? (
+            <nav className="category-bar" aria-label="Instruments">
+              {INSTRUMENTS.map((inst) => {
+                const active = instrument === inst.id;
+                return (
+                  <button
+                    key={inst.id}
+                    className={`category-chip ${active ? 'category-chip-active' : ''}`}
+                    style={{
+                      background: active ? inst.colorDark : inst.color,
+                      color: active ? '#fff' : inst.colorDark,
+                    }}
+                    onClick={() => {
+                      playPop();
+                      setInstrument(inst.id);
+                    }}
+                  >
+                    <span className="category-emoji" aria-hidden="true">{inst.emoji}</span>
+                    <span>{inst.name}</span>
+                  </button>
+                );
+              })}
+            </nav>
+          ) : screen === 'write' ? (
             <nav className="category-bar" aria-label="Tracing sets">
               <button
                 className={`category-chip ${writeSetId === null ? 'category-chip-active' : ''}`}
@@ -762,7 +924,11 @@ function MTalkApp({
           )}
         </div>
 
-        {screen === 'write' ? (
+        {screen === 'music' ? (
+          <Suspense fallback={<main className="music" />}>
+            <MusicRoom instrument={instrument} />
+          </Suspense>
+        ) : screen === 'write' ? (
           <Suspense fallback={<main className="write-pad" />}>
             <WritePad rate={settings.speechRate} setId={writeSetId} />
           </Suspense>
@@ -817,6 +983,62 @@ function MTalkApp({
                 </div>
               </Fragment>
             ))}
+
+            {/* Counting grows on demand: ten more at a time, so the board never
+                opens with a thousand tiles in front of a child */}
+            {activeCategory?.id === 'numbers' && screen !== 'home' && (
+              <div className="load-more">
+                <span className="load-more-count">
+                  {UI[settings.language].numbersShown} 1–
+                  {Math.min(settings.numberLimit, NUMBERS_MAX)}
+                </span>
+                <div className="load-more-actions">
+                  {settings.numberLimit < NUMBERS_MAX && (
+                    <button
+                      className="btn-primary"
+                      onClick={() => {
+                        playPop();
+                        update({
+                          numberLimit: Math.min(
+                            settings.numberLimit + NUMBERS_STEP,
+                            NUMBERS_MAX,
+                          ),
+                        });
+                      }}
+                    >
+                      ➕ {NUMBERS_STEP} more
+                    </button>
+                  )}
+                  {settings.numberLimit > NUMBERS_START && (
+                    <button
+                      className="btn-secondary"
+                      onClick={() => {
+                        playPop();
+                        update({
+                          numberLimit: Math.max(
+                            settings.numberLimit - NUMBERS_STEP,
+                            NUMBERS_START,
+                          ),
+                        });
+                      }}
+                    >
+                      ➖ {NUMBERS_STEP} fewer
+                    </button>
+                  )}
+                  {settings.numberLimit > NUMBERS_START && (
+                    <button
+                      className="btn-secondary"
+                      onClick={() => {
+                        playPop();
+                        update({ numberLimit: NUMBERS_START });
+                      }}
+                    >
+                      ↩️ Back to 10
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </main>
         )}
       </div>
@@ -839,6 +1061,11 @@ function MTalkApp({
           profiles={profiles}
           activeProfileId={profile.id}
           user={user}
+          usage={usage}
+          masteryStats={stats}
+          history={history}
+          boardCategories={allCategories}
+          wordIndex={wordIndex}
           users={users}
           onCreateUser={onCreateUser}
           onUpdateUser={onUpdateUser}
@@ -887,12 +1114,14 @@ function MTalkApp({
           usedThisWeek={usedThisWeek}
           newThisWeek={newThisWeek}
           onUpdate={update}
-          onAddTile={() => {
+          onAddTile={(categoryId) => {
             setEditorTile(null);
+            setEditorCategory(categoryId);
             setEditorOpen(true);
           }}
           onEditTile={(tile) => {
             setEditorTile(tile);
+            setEditorCategory(undefined);
             setEditorOpen(true);
           }}
           onRemoveTile={(id) => void removeTile(id)}
@@ -902,7 +1131,11 @@ function MTalkApp({
 
       {editorOpen && (
         <TileEditor
+          // remount per target, so a new tile never inherits the last one's
+          // photo, name or category
+          key={editorTile?.id ?? `new-${editorCategory ?? ''}`}
           initial={editorTile ?? undefined}
+          presetCategoryId={editorCategory}
           categories={customCategories}
           onSave={(tile) =>
             editorTile ? updateTile({ ...editorTile, ...tile }) : addTile(tile)
@@ -930,6 +1163,8 @@ function MTalkApp({
         }
         return story ? (
           <StoryPlayer
+            // a new book gets a new player, never the last one's page
+            key={activeStoryId}
             story={story}
             language={settings.language}
             rate={settings.speechRate}
