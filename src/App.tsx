@@ -988,24 +988,6 @@ function MTalkApp({
               }}
             />
           )}
-          {/* the games all play with whichever category is showing above */}
-          {screen === 'quiz' && (
-            <div className="game-picker">
-              {GAMES.map((g) => (
-                <button
-                  key={g.id}
-                  className={`game-chip ${game === g.id ? 'game-chip-on' : ''}`}
-                  onClick={() => {
-                    playPop();
-                    setGame(g.id);
-                  }}
-                >
-                  <span className="game-chip-emoji">{g.emoji}</span>
-                  {UI[settings.language][g.labelKey]}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
 
         {screen === 'music' ? (
@@ -1017,7 +999,26 @@ function MTalkApp({
             <WritePad rate={settings.speechRate} setId={writeSetId} />
           </Suspense>
         ) : screen === 'quiz' ? (
-          <Suspense fallback={<main className="quiz" />}>
+          <div className="play-wrap">
+            {/* every game plays with whichever category is chosen in the sidebar */}
+            <nav className="game-picker" aria-label="Games">
+              {GAMES.map((g) => (
+                <button
+                  key={g.id}
+                  className={`game-chip ${game === g.id ? 'game-chip-on' : ''}`}
+                  aria-label={UI[settings.language][g.labelKey]}
+                  aria-current={game === g.id ? 'page' : undefined}
+                  onClick={() => {
+                    playPop();
+                    setGame(g.id);
+                  }}
+                >
+                  <span className="game-chip-emoji" aria-hidden="true">{g.emoji}</span>
+                  <span className="game-chip-name">{UI[settings.language][g.labelKey]}</span>
+                </button>
+              ))}
+            </nav>
+            <Suspense fallback={<main className="quiz" />}>
             {game === 'listen' ? (
               <QuizMode
                 words={visibleWords}
@@ -1043,8 +1044,9 @@ function MTalkApp({
                 categories={groupCategories}
                 numberWords={countingWords}
               />
-            )}
-          </Suspense>
+              )}
+            </Suspense>
+          </div>
         ) : (
           <main className="board-scroll" onClickCapture={handleScanSelect}>
             {screen === 'home' && displayWords.length === 0 && (

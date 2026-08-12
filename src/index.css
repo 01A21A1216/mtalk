@@ -5000,25 +5000,51 @@ select {
 
 /* ---------------------------------------------------- thinking games (Play) */
 
+/*
+ * The games sit in a single row above the board they play with, rather than
+ * stacked down the sidebar where eight of them became a wall of buttons and
+ * pushed the categories off the screen.
+ */
+.play-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .game-picker {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   justify-content: center;
-  flex-wrap: wrap;
-  padding: 6px 10px 2px;
+  /* one row, always: wrapping cost the board a second row of buttons for the
+     sake of a few pixels, so a narrow screen scrolls the games instead */
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 6px 10px 0;
+  flex-shrink: 0;
+}
+
+.game-picker::-webkit-scrollbar {
+  display: none;
+}
+
+.game-chip {
+  flex-shrink: 0;
 }
 
 .game-chip {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 14px;
+  padding: 7px 11px;
   border-radius: 999px;
   background: #fff;
   border: 2px solid #e6dff5;
   color: #4a2f7a;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .game-chip-on {
@@ -5029,6 +5055,27 @@ select {
 
 .game-chip-emoji {
   font-size: 1.15rem;
+}
+
+/*
+ * Only the chosen game says its name.
+ *
+ * Eight names side by side wrapped into two or three rows of buttons and took
+ * that space off the board below. The pictures are distinct and are what a
+ * child navigates by anyway, so they carry the row on their own; the name
+ * appears on whichever game is open, and every button keeps its label for a
+ * screen reader.
+ */
+.game-chip-name {
+  display: none;
+}
+
+.game-chip-on .game-chip-name {
+  display: inline;
+}
+
+.game-chip-emoji {
+  font-size: 1.3rem;
 }
 
 .play {
