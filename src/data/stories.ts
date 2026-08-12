@@ -9,7 +9,7 @@
 export interface Story {
   id: string;
   emoji: string;
-  kind: 'story' | 'rhyme';
+  kind: 'story' | 'rhyme' | 'routine';
   title: { en: string; hi?: string };
   lines: { en: string[]; hi?: string[] };
   /** one emoji scene per line */

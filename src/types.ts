@@ -58,6 +58,11 @@ export interface CustomTile {
   audio?: string;
   /** What to say when it differs from the label (imported OBF vocalization) */
   speak?: string;
+  /**
+   * Where this tile sits in its category. Absent means "wherever it was made",
+   * so tiles from before reordering existed keep their old places.
+   */
+  order?: number;
   createdAt: number;
   /** Owning child profile (legacy tiles belong to the first profile) */
   profileId?: string;
@@ -147,6 +152,14 @@ export interface Settings {
   roomyGrid: boolean;
   /** Switch-scanning access: tiles highlight in turn, tap anywhere to select */
   scanning: boolean;
+  /**
+   * How long each tile stays lit, in milliseconds.
+   *
+   * The right speed is personal and the wrong one makes the whole mode
+   * useless: too fast and a child with slow movement can never land on what
+   * they meant, too slow and a sentence takes a minute.
+   */
+  scanMs: number;
   /** First–Then visual schedule: word ids chosen by the caregiver */
   firstThenFirst: string | null;
   firstThenThen: string | null;

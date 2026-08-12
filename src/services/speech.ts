@@ -1,12 +1,21 @@
+import { Capacitor } from '@capacitor/core';
+import { TextToSpeech } from '@capacitor-community/text-to-speech';
 import { wordSpeech } from '../i18n';
 import { recordedVoiceFor } from './voicePack';
 import type { Language, Word } from '../types';
 
 /**
- * Text-to-speech built on the Web Speech API. On Android/iOS tablets this
- * uses the device's installed voices — most Indian devices ship with
- * en-IN and hi-IN voices out of the box.
+ * Text-to-speech, by two roads.
+ *
+ * In a browser this is the Web Speech API. Inside the installed app it is the
+ * device's own TTS engine through a Capacitor plugin, because Android's System
+ * WebView does not implement Web Speech at all — the same code that talks in
+ * Chrome is silent in the APK, which is exactly the sort of difference that
+ * only shows up on a real tablet.
  */
+
+/** True inside the installed Android/iOS app, false in any browser */
+const native = Capacitor.isNativePlatform();
 
 let voices: SpeechSynthesisVoice[] = [];
 
@@ -14,7 +23,7 @@ function refreshVoices() {
   voices = window.speechSynthesis.getVoices();
 }
 
-if ('speechSynthesis' in window) {
+if (!native && 'speechSynthesis' in window) {
   refreshVoices();
   window.speechSynthesis.onvoiceschanged = refreshVoices;
 }
@@ -52,8 +61,44 @@ function pickVoice(language: Language): SpeechSynthesisVoice | null {
   return null;
 }
 
+/** Stops whatever is being said, on whichever engine is in use */
+export function stopSpeaking() {
+  if (native) {
+    void TextToSpeech.stop().catch(() => {
+      // nothing was playing
+    });
+    return;
+  }
+  window.speechSynthesis?.cancel();
+}
+
 export function speak(text: string, language: Language, rate = 0.85, onEnd?: () => void) {
-  if (!('speechSynthesis' in window) || !text.trim()) {
+  if (!text.trim()) {
+    onEnd?.();
+    return;
+  }
+
+  if (native) {
+    // the plugin resolves when the device has finished speaking
+    void TextToSpeech.stop()
+      .catch(() => {
+        // nothing to stop
+      })
+      .then(() =>
+        TextToSpeech.speak({
+          text,
+          lang: LANG_TAGS[language],
+          rate,
+          pitch: 1.1,
+          category: 'playback',
+        }),
+      )
+      .then(() => onEnd?.())
+      .catch(() => onEnd?.());
+    return;
+  }
+
+  if (!('speechSynthesis' in window)) {
     onEnd?.();
     return;
   }
@@ -100,12 +145,12 @@ export function speakWord(
   // a parent's own recording of this word wins over any synthetic voice
   const recorded = recordedVoiceFor(word.id);
   if (recorded) {
-    window.speechSynthesis?.cancel();
+    stopSpeaking();
     void playAudioAsync(recorded);
     return;
   }
   if (word.audio) {
-    window.speechSynthesis?.cancel();
+    stopSpeaking();
     void playAudioAsync(word.audio);
     return;
   }
@@ -162,4 +207,32 @@ export function playPop() {
   } catch {
     // audio feedback is best-effort only
   }
+}
+
+/**
+ * A one-line account of what this device can actually say.
+ *
+ * Speech is the one part of MTalk that depends entirely on the tablet: the
+ * engine differs between the installed app and a browser, and a language only
+ * speaks if its voice is installed. When a board goes quiet, this says why.
+ */
+export async function describeSpeech(language: Language): Promise<string> {
+  const tag = LANG_TAGS[language];
+  if (native) {
+    try {
+      const { languages } = await TextToSpeech.getSupportedLanguages();
+      const has = languages.some((l) => l.toLowerCase().startsWith(tag.slice(0, 2)));
+      return has
+        ? `App voice: ${languages.length} languages installed, including ${tag}.`
+        : `App voice: ${languages.length} languages installed, but no ${tag}. Install it in Settings → General → Text-to-speech.`;
+    } catch {
+      return 'App voice: this tablet has no text-to-speech engine. Install Google Text-to-Speech from the Play Store.';
+    }
+  }
+  if (!('speechSynthesis' in window)) return 'Browser voice: this browser cannot speak.';
+  if (voices.length === 0) refreshVoices();
+  const match = pickVoice(language);
+  return match
+    ? `Browser voice: ${voices.length} voices, using ${match.name} (${match.lang}).`
+    : `Browser voice: ${voices.length} voices, none for ${tag} — falling back to the default.`;
 }

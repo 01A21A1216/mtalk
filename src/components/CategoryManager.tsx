@@ -16,6 +16,7 @@ interface CategoryManagerProps {
   /** Opens the tile editor, starting in this category when given */
   onAddTile: (categoryId?: string) => void;
   onEditTile: (tile: CustomTile) => void;
+  onMoveTile: (id: string, delta: number) => void;
 }
 
 const AGE_LABEL: Record<number, string> = {
@@ -41,6 +42,7 @@ export function CategoryManager({
   onRemoveCategory,
   onAddTile,
   onEditTile,
+  onMoveTile,
 }: CategoryManagerProps) {
   const [name, setName] = useState('');
   const [emoji, setEmoji] = useState('');
@@ -194,20 +196,38 @@ export function CategoryManager({
                       {cat.words.map((w) => {
                         const own = tileById.get(w.id);
                         return own ? (
-                          <button
-                            key={w.id}
-                            className="cat-tile cat-tile-own"
-                            onClick={() => onEditTile(own)}
-                            title="Edit this tile"
-                          >
-                            {w.image ? (
-                              <img className="cat-tile-img" src={w.image} alt="" />
-                            ) : (
-                              <span className="cat-tile-emoji">{w.emoji}</span>
-                            )}
-                            <span className="cat-tile-name">{wordLabel(w, language)}</span>
-                            <span className="cat-tile-edit">✏️</span>
-                          </button>
+                          <div key={w.id} className="cat-tile-wrap">
+                            <button
+                              className="cat-tile cat-tile-own"
+                              onClick={() => onEditTile(own)}
+                              title="Edit this tile"
+                            >
+                              {w.image ? (
+                                <img className="cat-tile-img" src={w.image} alt="" />
+                              ) : (
+                                <span className="cat-tile-emoji">{w.emoji}</span>
+                              )}
+                              <span className="cat-tile-name">{wordLabel(w, language)}</span>
+                              <span className="cat-tile-edit">✏️</span>
+                            </button>
+                            {/* the order a child reads left to right, so it is worth choosing */}
+                            <span className="cat-tile-move">
+                              <button
+                                className="cat-move-btn"
+                                aria-label="Move earlier"
+                                onClick={() => onMoveTile(own.id, -1)}
+                              >
+                                ◀
+                              </button>
+                              <button
+                                className="cat-move-btn"
+                                aria-label="Move later"
+                                onClick={() => onMoveTile(own.id, 1)}
+                              >
+                                ▶
+                              </button>
+                            </span>
+                          </div>
                         ) : (
                           <span key={w.id} className="cat-tile">
                             {w.image ? (

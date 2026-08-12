@@ -44,11 +44,79 @@ Priorities: **P1** = next up · **P2** = strong candidates · **P3** = later
    - Both were written to match the register the other languages use — a child's imperative, not the dictionary form. A native speaker should still read them before they go to families.
    - Speech needs the tablet to have the Marathi/Bengali TTS voice installed; without it the label still shows and the device falls back to its default voice.
 
+### 🧩 Thinking games (researched Aug 2026, not started)
+
+**Not "Brain Gym®".** The branded programme (Dennison's Educational Kinesiology — "brain buttons", cross-crawl, hemispheric integration) has no credible evidence behind it and is a standard example of classroom pseudoscience. Its claims must not go into an app sold to families of disabled children. The *want* behind the request is real, so this item builds the real thing under a plain name.
+
+**What the games may honestly claim.** Cognitive-training meta-analyses find solid *near* transfer (you get better at the trained task, g ≈ 0.44) and essentially no *far* transfer to intelligence or school results (g ≈ 0.11, shrinking further in well-controlled studies). So the promise is "practice at looking, matching and remembering", never "a smarter child".
+
+**The AAC rule that shapes the design.** The field is explicit that there are *no prerequisite skills* for AAC — children have been denied a voice for years while being drilled on cause-and-effect first. So: the games are never a gate. Nothing in Talk unlocks by playing, no score is shown to the child, and the board is always one tap away.
+
+**The design decision that makes it worth building:** the games play with *this child's own tiles* — their photos, their words, their categories. Practising the very symbols they communicate with is the one place near transfer actually counts.
+
+**First two shipped (v2.5)** under the 🎯 Play tab, as chips beside the original listen-and-tap quiz. They play with whatever category is selected above them, so picking *My Words* or a custom category means the child practises their own photos. [`src/components/PlayGames.tsx`](src/components/PlayGames.tsx)
+
+- 🔍 **Find it** — the target sits above a grid the child searches. Grows 2 → 4 → 6 → 9 → 12 after three clean rounds and quietly shrinks again after three misses. Wordless: nothing to hear or read, so a child who does not yet map spoken words can still play. On success it speaks the word itself rather than "well done" — the picture is the lesson.
+- 🧩 **Pairs** — turn-over memory, 2 → 3 → 4 → 6 pairs, levelling up each time the board is cleared.
+
+Both dedupe by picture, because several words share an emoji (`yes` and `f-yes` are both 👍) and two identical pictures would mean two right-looking answers with one accepted.
+
+**Not yet:** these do not work under scanning mode — the existing quiz does not either, and switch access across all of Play deserves doing once, properly. Progress is stored per child (`mtalk-games:<id>`: rounds and hardest level) but is not yet surfaced in 📊 Progress.
+
+**All six games now shipped** (v2.7) — 👆 Touch · 🔊 Listen · 🔍 Find it · 🧩 Pairs · 🙅 Odd one · 🔢 How many · 🗓️ My day:
+
+1. ~~**Touch anything**~~ — ✅ one enormous target, a new colour and a new word on every tap, and nothing that can be wrong. For a child who has not yet learned that they make things happen; also the gentlest way into switch use, since there is only one thing on screen to wait for.
+2. ~~**Odd one out**~~ — ✅ see item 8 above.
+3. ~~**What comes next**~~ — ✅ 🗓️ **My day**: the steps of the child's *own* day plan, jumbled, to be put back. The sequence being learned is the one they actually live.
+4. ~~**Scanning across the Play tab**~~ — ✅ the lit cell walks the grid every 1.8s and a tap anywhere takes it, matching the board. Without it the Play tab quietly excluded the children with the least movement. **Not yet on 🔊 Listen** (the original quiz) or on 🧩 Pairs, where "the lit card" needs thinking about for a two-tap game.
+5. ~~**A line in 📊 Progress**~~ — ✅ rounds finished and hardest level reached, per game. No score and no accuracy, on purpose.
+
+Accessibility rules for all of them: no timer, no failure state (a wrong tap re-shows the right answer and moves on), works under scanning mode, instructions demonstrated rather than written, difficulty per child, and progress reported only to the grown-up in 📊 Progress.
+
+Open question: whether this is a seventh tab (🧩) or a section inside Learn. Six tabs is already a lot for a small child to parse.
+
+### 📚 Learning content for non-verbal kids (researched Aug 2026)
+
+**What the count says.** The board holds 409 words: 100 in First 100, about 33 core words elsewhere, and ~276 nouns across 17 noun categories (Animals 20, Food 19, Vehicles 17, Clothes 13, Vegetables 12, Fruits 12, Sports 12, Birds 12…). Roughly 80% of what anyone says comes from a few hundred *core* words — want, more, stop, go, again, that, my, not. Nouns are fringe: thousands of them, each used rarely. The board is currently inverted against how talking works. A child with twenty animals and no *again* can name a giraffe but cannot ask for the fun thing twice.
+
+So the next content is **depth on the words a child uses fifty times a day**, not another two hundred nouns.
+
+1. ~~**Two-word combinations**~~ — ✅ **done** (v2.6). The hard jump in AAC is not the first word, it is the second. Taught patterns (want + thing, more + action, my + thing, go + place, person + action) so a two-word phrase is one tap away. Feeds the existing ✨ suggestion row, which today only lights up once the child has produced sentences — a cold start a child who cannot yet combine will never escape on their own. Learned pairs still come first; taught ones fill the rest of the row, and any partner already in the strip or missing from this child's board is dropped. Added the word **again** (🔁) with all seven translations — the thing a child asks for most and had no way to say. [`src/data/combos.ts`](src/data/combos.ts)
+2. ~~**Word of the week, for the grown-up**~~ — ✅ **done** (v2.6). One core word a week with five concrete ways to model it during an ordinary day. Aided language modelling is the best-evidenced AAC intervention and the thing parents get least help with. Lives in 📊 Progress, not on the child's board. Twelve words — more, again, stop, want, help, go, all done, mine, look, too loud, pain, my turn — each with why it matters and five ordinary moments to use it in. Moves with the calendar so a parent who never touches it still gets a new word, with arrows to wander. English and Hindi written; te/ta/kn/mr/bn fall back to English. [`src/data/coreWeek.ts`](src/data/coreWeek.ts)
+3. ~~**Life-skill step sequences**~~ — ✅ **done** (v2.6). A 🧼 **How to** category in Learn: washing hands, brushing teeth, toilet, getting dressed, eating, bath, bedtime, getting ready for school — eight steps each, one action to a page, said to the child rather than about them. They ride the story player, because a routine *is* a picture book about something the child is about to do. [`src/data/routines.ts`](src/data/routines.ts)
+   - The player now reads a routine **one step at a time and waits**. Stories still read themselves through — but a book that races ahead to "all clean" while the child is still finding the soap is worse than no book.
+   - English and Hindi written; other languages fall back to English.
+4. ~~**About me / if I'm lost**~~ — ✅ **done** (v2.6). Settings → 🪪 **About me**: what people call them, full name, parent and second phone, home, school, medical, how they talk, what calms them. Prints as a card whose first line is *"I do not speak. I use a tablet app called MTalk to talk. Please be patient and give me time — I understand more than I can say."* Blank fields are left off the card entirely. [`src/hooks/useAboutMe.ts`](src/hooks/useAboutMe.ts)
+   - **Stays on the tablet.** A child's address and their parents' phone numbers are never published to the online account directory. The print button only appears once there is something worth printing.
+5. ~~**Feelings and body signals**~~ — ✅ **done** (v2.7). A 🩺 **My body tells me** category in Talk: dizzy · itchy · I want to vomit · my heart is fast · I cannot breathe well · too bright · too tight · I am wet · I want to be alone. All seven languages. The "what helps me" half lives in 🪪 About me, where a new carer will actually look for it.
+   - `shivering` was cut: `cold` already says it, and its 🥶 clashed with that tile — two identical pictures would have made it invisible to the games.
+6. ~~**Early literacy for AAC users**~~ — ✅ **done** (v2.8), designed per script rather than translated. 🔤 **First letter** in Play: one letter from *this child's own alphabet*, and the words on their board to pick from.
+
+   **Why one game can serve seven languages.** The unit a child learns first is not the same everywhere: English is alphabetic and B is a sound, while Devanagari, Bengali, Telugu, Kannada and Tamil are abugidas where क is already "ka" and the vowel signs that change it (कि, की, कु) hang off that same consonant. What is shared is the *shape of the question* — here is one unit of the script, which of these words begins with it — so the unit is taken from each language's own alphabet in its own teaching order, and the game is native everywhere instead of English with translated labels.
+
+   The matching rule falls out of how the scripts are encoded: vowel signs and virama are combining marks that follow their base, so the first code point of a word is its base letter in all of them. Conjuncts reduce to their first consonant, which is what a child working through the alphabet has been taught to look for. [`src/services/scriptLetters.ts`](src/services/scriptLetters.ts)
+
+   Coverage across the whole board — letters that have a word behind them: **en 26/26 · mr 36/50 · hi 35/49 · bn 34/47 · kn 34/49 · te 32/52 · ta 26/36**. Only letters the child's board can answer are ever asked about.
+
+   Verified in three scripts: English (six rounds, always exactly one correct answer), Telugu (क-equivalent క accepted the conjunct క్షమించండి), Hindi (त → ताली, च → चिपकाना, स → सोने — matra words matched to their base consonant).
+
+   - **Bonus fix:** Marathi and Bengali had no native-script tracing in the ✍️ Write tab — a gap opened when those languages were added. Both now have their alphabets (मराठी 50 glyphs including ळ, which Hindi does not use; বাংলা 47), so the Write tab and this game share one source.
+   - Still to come: letter-to-sound blending and sight words. This is the first rung of the ladder, not the whole ladder.
+7. ~~**Number sense rather than number names**~~ — ✅ **done** (v2.7). 🔢 **How many** in Play: a handful of one picture, and the numerals to match. Grows 1–3 → 1–5 → 1–8 → 1–10. Says the number in the child's own language using the existing number words. More/less and "give me three" are still to come.
+8. ~~**Sorting by attribute**~~ — ✅ **done** (v2.7), as 🙅 **Odd one** in Play: three pictures from one of the child's categories and one from another. Categorisation using the way their own board is organised. Says so plainly when there are not two usable categories rather than showing an empty screen.
+9. ~~**Community signs, Indian context**~~ — ✅ **done** (v2.7). A 🚻 **Signs** category in Learn: toilet · men · women · drinking water · danger · chemist · police · bus stop · railway station · lift · children crossing · no smoking · first aid. All seven languages.
+10. ~~**Social scripts**~~ — ✅ **done** (v2.7). A 👋 **What happens** category in Learn: a visitor arriving · being asked my name · going to the shop · going to the doctor · getting a haircut. Read beforehand, they turn an ambush into something expected, and each one ends by naming the way out — the word the child can press if it becomes too much.
+   - Written honestly. "It can feel itchy" is more use than "it will be fun", because when it *is* itchy the book has not lied to them.
+   - English and Hindi; other languages fall back to English.
+
+**Flagged, not to be written unilaterally: body autonomy and safe/unsafe touch.** Non-verbal children are abused at far higher rates and are least able to report it, so this content matters enormously — and for that exact reason every tile needs a child-protection specialist's review before it ships.
+
 ## P2 — strong candidates
 
-- **ARASAAC pictograms** — therapy-standard open-licensed symbols to replace emoji for abstract words (want, more, later); needs an offline symbol pack + attribution (CC BY-NC-SA licensing)
+- **ARASAAC pictograms** — therapy-standard symbols for abstract words (want, more, later), which emoji genuinely do badly. **Check the licence before building anything:** ARASAAC is CC BY-NC-SA — the NC is non-commercial, and MTalk has a subscription. Shipping the pack inside a paid app would need either a licence conversation with ARASAAC or a decision that the symbols only ever ride along with the free side of the app. That is a question for a person, not something to sort out in code.
 - **Reverse quiz** — see picture → hear 3 words, pick the right one; weekly progress chart
-- **Custom tile category assignment + reordering**
+- ~~**Custom tile category assignment + reordering**~~ — ✅ **done** (v2.8). Assignment already existed in the tile editor; the missing half was order — tiles were stuck in the sequence they happened to be made in. ◀ ▶ on every tile in 📁 Categories now sets the order a child reads them in.
+  - The tiles keep the numeric slots they already had and swap which tile holds which, so a tile that has never been moved still sorts by when it was made and no tile can drift into another category's range. Verified: Alpha·Bravo·Charlie → Charlie·Alpha·Bravo, persisted as `order` 1000/1001/1002, and the child's board shows the chosen order.
 
 - v1.9 (web) — Stories & Rhymes picture-book player (16 titles, per-line emoji scenes, en+hi); multi-child **profiles** (picker screen, per-profile settings/tiles/progress/favorites, auto-migration of existing data); **custom categories** for tiles; **🏠 Home tab** (pinned words + favourites + custom tiles per child); Kid Lock (native, next APK); HTTPS server for tablet mic; Write tab trace categories in sidebar
 
@@ -57,6 +125,7 @@ Priorities: **P1** = next up · **P2** = strong candidates · **P3** = later
 - v2.0 — Full-day visual schedule (Home tab strip, per-step ticks that clear overnight, current-step highlight, parent editor with reorder); calm-corner breathing bubble (4-4-6, spoken, 5 languages); choice mode (two big tiles); native-script tracing (Devanagari/Telugu/Tamil/Kannada) in Write; per-child tile size; animal/vehicle sound effects; shareable progress report; social stories builder; sentence share-as-image; GitHub Pages hosting
 
 ## P3 — later
-- **Scanning speed setting + row/column scanning** — current scanning is linear at fixed 1.8 s
+- ~~**Scanning speed setting**~~ — ✅ **done** (v2.8). Five speeds from 🐢 3.5 s to 🐇 0.8 s, shown only when scanning is on, applied to the board *and* to every game in Play. The right speed is personal and the wrong one makes the mode useless — too fast and a child never lands on what they meant, too slow and a sentence takes a minute. Verified end to end: picking 🐢 stored 3500 and the board's highlight stepped at that pace.
+  - **Row/column scanning still to do** — with a big board, stepping one tile at a time is slow however well the speed is set. Rows first, then tiles within the chosen row, is the standard answer.
 - **Backup improvements** — in-APK file save needs a Capacitor Filesystem plugin (browser/PWA download works today)
 - **Play Store / App Store publishing** — AAB build, store listing, privacy policy; iOS build needs a Mac

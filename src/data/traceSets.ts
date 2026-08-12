@@ -27,6 +27,29 @@ const toItems = (pairs: string[][]): TraceItem[] =>
  * alphabet should find every letter here, including the ones that only turn up
  * late (ఱ, ಳ, क्ष, ழ).
  */
+/**
+ * Devanagari, shared by Hindi and Marathi.
+ *
+ * Marathi is written in the same script and adds ळ, which Hindi does not use —
+ * so the list is shared rather than copied, and the one real difference is
+ * stated where it belongs.
+ */
+const DEVANAGARI: string[][] = [
+  // स्वर — vowels
+  ['अ', 'a'], ['आ', 'aa'], ['इ', 'i'], ['ई', 'ee'], ['उ', 'u'], ['ऊ', 'oo'],
+  ['ऋ', 'ri'], ['ए', 'e'], ['ऐ', 'ai'], ['ओ', 'o'], ['औ', 'au'],
+  ['अं', 'an'], ['अः', 'ah'],
+  // व्यंजन — consonants
+  ['क', 'ka'], ['ख', 'kha'], ['ग', 'ga'], ['घ', 'gha'], ['ङ', 'nga'],
+  ['च', 'cha'], ['छ', 'chha'], ['ज', 'ja'], ['झ', 'jha'], ['ञ', 'nya'],
+  ['ट', 'ta'], ['ठ', 'tha'], ['ड', 'da'], ['ढ', 'dha'], ['ण', 'na'],
+  ['त', 'ta'], ['थ', 'tha'], ['द', 'da'], ['ध', 'dha'], ['न', 'na'],
+  ['प', 'pa'], ['फ', 'pha'], ['ब', 'ba'], ['भ', 'bha'], ['म', 'ma'],
+  ['य', 'ya'], ['र', 'ra'], ['ल', 'la'], ['व', 'va'],
+  ['श', 'sha'], ['ष', 'shha'], ['स', 'sa'], ['ह', 'ha'],
+  ['क्ष', 'ksha'], ['त्र', 'tra'], ['ज्ञ', 'gya'],
+];
+
 export const SCRIPT_SETS: Record<string, TraceSet> = {
   hi: {
     id: 'script-hi',
@@ -34,20 +57,35 @@ export const SCRIPT_SETS: Record<string, TraceSet> = {
     name: 'हिन्दी',
     color: '#FFF3E0',
     colorDark: '#E65100',
+    items: toItems(DEVANAGARI),
+  },
+  mr: {
+    id: 'script-mr',
+    emoji: 'अ',
+    name: 'मराठी',
+    color: '#FFF3E0',
+    colorDark: '#BF360C',
+    items: toItems([...DEVANAGARI, ['ळ', 'la']]),
+  },
+  bn: {
+    id: 'script-bn',
+    emoji: 'অ',
+    name: 'বাংলা',
+    color: '#FFF8E1',
+    colorDark: '#8D6E63',
     items: toItems([
-      // स्वर — vowels
-      ['अ', 'a'], ['आ', 'aa'], ['इ', 'i'], ['ई', 'ee'], ['उ', 'u'], ['ऊ', 'oo'],
-      ['ऋ', 'ri'], ['ए', 'e'], ['ऐ', 'ai'], ['ओ', 'o'], ['औ', 'au'],
-      ['अं', 'an'], ['अः', 'ah'],
-      // व्यंजन — consonants
-      ['क', 'ka'], ['ख', 'kha'], ['ग', 'ga'], ['घ', 'gha'], ['ङ', 'nga'],
-      ['च', 'cha'], ['छ', 'chha'], ['ज', 'ja'], ['झ', 'jha'], ['ञ', 'nya'],
-      ['ट', 'ta'], ['ठ', 'tha'], ['ड', 'da'], ['ढ', 'dha'], ['ण', 'na'],
-      ['त', 'ta'], ['थ', 'tha'], ['द', 'da'], ['ध', 'dha'], ['न', 'na'],
-      ['प', 'pa'], ['फ', 'pha'], ['ब', 'ba'], ['भ', 'bha'], ['म', 'ma'],
-      ['य', 'ya'], ['र', 'ra'], ['ल', 'la'], ['व', 'va'],
-      ['श', 'sha'], ['ष', 'shha'], ['स', 'sa'], ['ह', 'ha'],
-      ['क्ष', 'ksha'], ['त्र', 'tra'], ['ज्ञ', 'gya'],
+      // স্বরবর্ণ — vowels
+      ['অ', 'o'], ['আ', 'a'], ['ই', 'i'], ['ঈ', 'ee'], ['উ', 'u'], ['ঊ', 'oo'],
+      ['ঋ', 'ri'], ['এ', 'e'], ['ঐ', 'oi'], ['ও', 'o'], ['ঔ', 'ou'],
+      // ব্যঞ্জনবর্ণ — consonants
+      ['ক', 'ka'], ['খ', 'kha'], ['গ', 'ga'], ['ঘ', 'gha'], ['ঙ', 'uma'],
+      ['চ', 'cha'], ['ছ', 'chha'], ['জ', 'ja'], ['ঝ', 'jha'], ['ঞ', 'nia'],
+      ['ট', 'ta'], ['ঠ', 'tha'], ['ড', 'da'], ['ঢ', 'dha'], ['ণ', 'na'],
+      ['ত', 'ta'], ['থ', 'tha'], ['দ', 'da'], ['ধ', 'dha'], ['ন', 'na'],
+      ['প', 'pa'], ['ফ', 'pha'], ['ব', 'ba'], ['ভ', 'bha'], ['ম', 'ma'],
+      ['য', 'ja'], ['র', 'ra'], ['ল', 'la'],
+      ['শ', 'sha'], ['ষ', 'shha'], ['স', 'sa'], ['হ', 'ha'],
+      ['ড়', 'ra'], ['ঢ়', 'rha'], ['য়', 'ya'], ['ৎ', 'khanda ta'],
     ]),
   },
   te: {

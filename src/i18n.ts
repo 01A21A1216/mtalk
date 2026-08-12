@@ -189,6 +189,14 @@ interface UiStrings {
   breatheHold: string;
   breatheOut: string;
   whichOne: string;
+  gameListen: string;
+  gameFind: string;
+  gamePairs: string;
+  gameTouch: string;
+  gameOdd: string;
+  gameCount: string;
+  gameOrder: string;
+  gameLetter: string;
 }
 
 export const UI: Record<Language, UiStrings> = {
@@ -214,6 +222,14 @@ export const UI: Record<Language, UiStrings> = {
     breatheHold: 'Hold',
     breatheOut: 'Breathe out',
     whichOne: 'Which one?',
+    gameListen: 'Listen',
+    gameFind: 'Find it',
+    gamePairs: 'Pairs',
+    gameTouch: 'Touch',
+    gameOdd: 'Odd one',
+    gameCount: 'How many',
+    gameOrder: 'My day',
+    gameLetter: 'First letter',
   },
   hi: {
     tagline: 'मेरी आवाज़',
@@ -237,6 +253,14 @@ export const UI: Record<Language, UiStrings> = {
     breatheHold: 'रोको',
     breatheOut: 'साँस छोड़ो',
     whichOne: 'कौन सा?',
+    gameListen: 'सुनो',
+    gameFind: 'ढूँढो',
+    gamePairs: 'जोड़ी',
+    gameTouch: 'छुओ',
+    gameOdd: 'अलग कौन',
+    gameCount: 'कितने',
+    gameOrder: 'मेरा दिन',
+    gameLetter: 'पहला अक्षर',
   },
   te: {
     tagline: 'నా గొంతు',
@@ -260,6 +284,14 @@ export const UI: Record<Language, UiStrings> = {
     breatheHold: 'ఆగు',
     breatheOut: 'ఊపిరి వదులు',
     whichOne: 'ఏది కావాలి?',
+    gameListen: 'విను',
+    gameFind: 'వెతుకు',
+    gamePairs: 'జోడీ',
+    gameTouch: 'తాకు',
+    gameOdd: 'వేరేది',
+    gameCount: 'ఎన్ని',
+    gameOrder: 'నా రోజు',
+    gameLetter: 'మొదటి అక్షరం',
   },
   ta: {
     tagline: 'என் குரல்',
@@ -283,6 +315,14 @@ export const UI: Record<Language, UiStrings> = {
     breatheHold: 'நிறுத்து',
     breatheOut: 'மூச்சை வெளியே விடு',
     whichOne: 'எது வேண்டும்?',
+    gameListen: 'கேள்',
+    gameFind: 'தேடு',
+    gamePairs: 'ஜோடி',
+    gameTouch: 'தொடு',
+    gameOdd: 'வேறு எது',
+    gameCount: 'எத்தனை',
+    gameOrder: 'என் நாள்',
+    gameLetter: 'முதல் எழுத்து',
   },
   kn: {
     tagline: 'ನನ್ನ ಧ್ವನಿ',
@@ -306,6 +346,14 @@ export const UI: Record<Language, UiStrings> = {
     breatheHold: 'ನಿಲ್ಲಿಸು',
     breatheOut: 'ಉಸಿರು ಹೊರಗೆ ಬಿಡು',
     whichOne: 'ಯಾವುದು ಬೇಕು?',
+    gameListen: 'ಕೇಳು',
+    gameFind: 'ಹುಡುಕು',
+    gamePairs: 'ಜೋಡಿ',
+    gameTouch: 'ಮುಟ್ಟು',
+    gameOdd: 'ಬೇರೆ ಯಾವುದು',
+    gameCount: 'ಎಷ್ಟು',
+    gameOrder: 'ನನ್ನ ದಿನ',
+    gameLetter: 'ಮೊದಲ ಅಕ್ಷರ',
   },
   mr: {
     tagline: 'माझा आवाज',
@@ -329,6 +377,14 @@ export const UI: Record<Language, UiStrings> = {
     breatheHold: 'थांब',
     breatheOut: 'श्वास सोड',
     whichOne: 'कोणतं?',
+    gameListen: 'ऐक',
+    gameFind: 'शोध',
+    gamePairs: 'जोडी',
+    gameTouch: 'स्पर्श',
+    gameOdd: 'वेगळं कोण',
+    gameCount: 'किती',
+    gameOrder: 'माझा दिवस',
+    gameLetter: 'पहिलं अक्षर',
   },
   bn: {
     tagline: 'আমার কণ্ঠ',
@@ -352,5 +408,13 @@ export const UI: Record<Language, UiStrings> = {
     breatheHold: 'ধরে রাখো',
     breatheOut: 'শ্বাস ছাড়ো',
     whichOne: 'কোনটা?',
+    gameListen: 'শোনো',
+    gameFind: 'খুঁজে বার করো',
+    gamePairs: 'জোড়া',
+    gameTouch: 'ছোঁয়ো',
+    gameOdd: 'আলাদা কোনটা',
+    gameCount: 'কতগুলো',
+    gameOrder: 'আমার দিন',
+    gameLetter: 'প্রথম অক্ষর',
   },
 };

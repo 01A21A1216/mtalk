@@ -13,6 +13,7 @@ const DEFAULT_SETTINGS: Settings = {
   vibrateOnTap: true,
   roomyGrid: false,
   scanning: false,
+  scanMs: 1800,
   firstThenFirst: null,
   firstThenThen: null,
   videoLimitMins: 10,

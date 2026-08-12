@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Story } from '../data/stories';
-import { playAudioAsync, playPop, speakAsync } from '../services/speech';
+import { playAudioAsync, playPop, speakAsync, stopSpeaking } from '../services/speech';
 import type { Language } from '../types';
 
 interface StoryPlayerProps {
@@ -12,7 +12,13 @@ interface StoryPlayerProps {
 
 /**
  * Picture-book reader: each line is a "page" with a big emoji scene, spoken
- * aloud with the text below. Auto-plays; arrows let kids browse pages.
+ * aloud with the text below. Arrows let kids browse pages.
+ *
+ * A story reads itself from beginning to end, which is what a story is for.
+ * A routine must not: its pages are steps a child is carrying out, and a book
+ * that races ahead to "all clean" while they are still finding the soap is
+ * worse than no book. Routines therefore read one step and wait to be asked
+ * for the next.
  */
 export function StoryPlayer({ story, language, rate, onClose }: StoryPlayerProps) {
   // Hindi text when available and selected; everything else reads English
@@ -27,7 +33,7 @@ export function StoryPlayer({ story, language, rate, onClose }: StoryPlayerProps
 
   const stop = () => {
     cancelledRef.current = true;
-    window.speechSynthesis?.cancel();
+    stopSpeaking();
     setPlaying(false);
   };
 
@@ -64,12 +70,19 @@ export function StoryPlayer({ story, language, rate, onClose }: StoryPlayerProps
    * story, the previous book's page number (and its line of text) would still
    * be on screen when the next one opened.
    */
+  const stepAtATime = story.kind === 'routine';
+
   useEffect(() => {
     setPage(0);
-    void playFrom(0);
+    if (stepAtATime) {
+      cancelledRef.current = false;
+      void sayPage(0);
+    } else {
+      void playFrom(0);
+    }
     return () => {
       cancelledRef.current = true;
-      window.speechSynthesis?.cancel();
+      stopSpeaking();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [story.id]);

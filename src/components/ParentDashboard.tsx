@@ -11,6 +11,8 @@ import {
   type UsageMap,
 } from '../services/analytics';
 import { coachingTips } from '../services/coaching';
+import { CORE_WEEK, weekIndex } from '../data/coreWeek';
+import type { GameStats } from '../hooks/useGameStats';
 import { loadChildData } from '../services/childData';
 import type { Category, HistoryEntry, Language, Profile, Settings, Word, WordStat } from '../types';
 
@@ -26,7 +28,19 @@ interface ParentDashboardProps {
   wordIndex: Map<string, Word>;
   settings: Settings;
   language: Language;
+  /** rounds played in the thinking games, for this child */
+  gameStats: GameStats;
 }
+
+/** Game id → what to call it, and what its "best" number counts */
+const GAME_NAMES: [string, string, string][] = [
+  ['touch', '👆 Touch', 'taps'],
+  ['find', '🔍 Find it', 'pictures'],
+  ['pairs', '🧩 Pairs', 'pairs'],
+  ['odd', '🙅 Odd one', 'pictures'],
+  ['count', '🔢 How many', 'to count'],
+  ['order', '🗓️ My day', 'steps'],
+];
 
 const RANGES = [
   { days: 7, label: '7 days' },
@@ -70,6 +84,7 @@ export function ParentDashboard({
   wordIndex,
   settings,
   language,
+  gameStats,
 }: ParentDashboardProps) {
   const [days, setDays] = useState(7);
   const [childId, setChildId] = useState(activeChildId);
@@ -101,6 +116,15 @@ export function ParentDashboard({
       coachingTips(data.usage, data.history, categories, wordIndex, days, childName),
     [data.usage, data.history, categories, wordIndex, days, childName],
   );
+
+  /*
+   * The week's core word. It moves on its own with the calendar so a parent who
+   * never touches this still gets a new one, and the arrows only nudge that
+   * along — there is no schedule to fall behind on.
+   */
+  const [weekShift, setWeekShift] = useState(0);
+  const week = CORE_WEEK[weekIndex(Date.now(), weekShift)];
+  const weekWord = wordIndex.get(week.id);
 
   const peak = Math.max(1, ...series.map((d) => d.taps));
   const label = (id: string) => {
@@ -222,6 +246,57 @@ export function ParentDashboard({
                   </span>
                 </div>
               ))}
+            </div>
+          </section>
+
+          {GAME_NAMES.some(([id]) => gameStats[id]) && (
+            <section className="dash-block">
+              <h4>Thinking games</h4>
+              <div className="dash-chips">
+                {GAME_NAMES.filter(([id]) => gameStats[id]).map(([id, name, unit]) => (
+                  <span key={id} className="dash-chip">
+                    {name}: {gameStats[id].rounds} · up to {gameStats[id].best} {unit}
+                  </span>
+                ))}
+              </div>
+              <p className="ft-hint">
+                Rounds finished and the hardest level reached. There is no score
+                and no accuracy here on purpose — a child who needed twenty taps
+                to find the picture still found the picture.
+              </p>
+            </section>
+          )}
+
+          <section className="dash-block">
+            <h4>Word of the week</h4>
+            <p className="dash-week-why">
+              {language === 'hi' ? week.whyHi : week.why}
+            </p>
+            <div className="dash-week">
+              <div className="dash-week-word">
+                <span className="dash-week-emoji" aria-hidden="true">
+                  {weekWord?.emoji ?? '💬'}
+                </span>
+                <strong>{weekWord ? wordLabel(weekWord, language) : week.id}</strong>
+              </div>
+              <ol className="dash-week-moments">
+                {(language === 'hi' ? week.momentsHi : week.moments).map((moment) => (
+                  <li key={moment}>{moment}</li>
+                ))}
+              </ol>
+            </div>
+            <p className="ft-hint">
+              Tap the word yourself while you say it, in the moment it means
+              something, and expect no reply. Using the board in front of a
+              child is what teaches it — not asking them to.
+            </p>
+            <div className="dash-week-nav">
+              <button className="btn-secondary" onClick={() => setWeekShift((n) => n - 1)}>
+                ← Previous word
+              </button>
+              <button className="btn-secondary" onClick={() => setWeekShift((n) => n + 1)}>
+                Next word →
+              </button>
             </div>
           </section>
 

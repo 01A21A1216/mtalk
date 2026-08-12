@@ -8,10 +8,11 @@ import {
   topWordsInRange,
   type UsageMap,
 } from '../services/analytics';
+import type { AboutMe } from '../hooks/useAboutMe';
 import type { Category, Language, Settings, Word, WordStat } from '../types';
 
 interface PrintSheetProps {
-  kind: 'book' | 'summary';
+  kind: 'book' | 'summary' | 'card';
   childName: string;
   language: Language;
   settings: Settings;
@@ -20,6 +21,7 @@ interface PrintSheetProps {
   usage: UsageMap;
   stats: Record<string, WordStat>;
   categories: Category[];
+  about: AboutMe;
 }
 
 const PER_PAGE = 6;
@@ -45,8 +47,50 @@ export function PrintSheet({
   usage,
   stats,
   categories,
+  about,
 }: PrintSheetProps) {
   const today = new Date().toLocaleDateString();
+
+  /*
+   * The card for the schoolbag. Deliberately blunt and skimmable: whoever
+   * reads it is probably standing in a crowd with a frightened child, and the
+   * first line has to tell them that no answer is coming and why.
+   */
+  if (kind === 'card') {
+    const rows: [string, string][] = [
+      ['Call me', about.callName],
+      ['Full name', about.fullName],
+      ['Parent', about.parentName],
+      ['Phone', about.parentPhone],
+      ['Another phone', about.otherPhone],
+      ['Home', about.address],
+      ['School', about.school],
+      ['Medical', about.medical],
+      ['How I talk', about.communication],
+      ['What helps me', about.calming],
+    ].filter((row): row is [string, string] => row[1].trim().length > 0);
+
+    return (
+      <div className="print-sheet print-card">
+        <h1>{about.callName || childName}</h1>
+        <p className="print-card-lead">
+          I do not speak. I use a tablet app called MTalk to talk. Please be
+          patient and give me time — I understand more than I can say.
+        </p>
+        <table className="print-card-table">
+          <tbody>
+            {rows.map(([label, value]) => (
+              <tr key={label}>
+                <th>{label}</th>
+                <td>{value}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="print-foot">Kept on the tablet only · {today}</p>
+      </div>
+    );
+  }
 
   if (kind === 'book') {
     const core = CORE_WORD_IDS.map((id) => wordIndex.get(id)).filter(

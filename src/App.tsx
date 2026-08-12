@@ -11,6 +11,9 @@ import { Tile } from './components/Tile';
 const QuizMode = lazy(() =>
   import('./components/QuizMode').then((m) => ({ default: m.QuizMode })),
 );
+const PlayGames = lazy(() =>
+  import('./components/PlayGames').then((m) => ({ default: m.PlayGames })),
+);
 const SettingsModal = lazy(() =>
   import('./components/SettingsModal').then((m) => ({ default: m.SettingsModal })),
 );
@@ -44,6 +47,7 @@ import { NUMBERS_MAX, NUMBERS_START, NUMBERS_STEP, numberWords } from './data/nu
 import { starterWords } from './data/starters';
 import { PACKS } from './data/packs';
 import { INSTRUMENTS, type Instrument } from './data/instruments';
+import { ROUTINES, SOCIAL_SCRIPTS } from './data/routines';
 import { STORIES } from './data/stories';
 import { SCRIPT_SETS, TRACE_SETS } from './data/traceSets';
 import { UI, sectionLabel, wordLabel } from './i18n';
@@ -54,6 +58,8 @@ import { useCustomCategories } from './hooks/useCustomCategories';
 import { useCustomStories } from './hooks/useCustomStories';
 import { useCustomTiles } from './hooks/useCustomTiles';
 import { useHome } from './hooks/useHome';
+import { comboPartners, comboStarters } from './data/combos';
+import { useGameStats } from './hooks/useGameStats';
 import { useMastery } from './hooks/useMastery';
 import { SENTENCE_START, useBigrams } from './hooks/useBigrams';
 import { useHistory } from './hooks/useHistory';
@@ -67,11 +73,36 @@ import { shareSentenceCard } from './services/shareCard';
 import { playWordSfx } from './services/soundEffects';
 import { playPop, playSequence, speakWord } from './services/speech';
 import { loadVoicePack } from './services/voicePack';
+import type { PlayGame } from './components/PlayGames';
 import type { AppUser, Category, CustomTile, Profile, UserRole, Word } from './types';
 
 const MAX_SENTENCE_WORDS = 10;
 
 type Screen = 'home' | 'talk' | 'learn' | 'quiz' | 'write' | 'music';
+
+/** Games under the Play tab; the first is the original listen-and-tap quiz */
+const GAMES: {
+  id: 'listen' | PlayGame;
+  emoji: string;
+  labelKey:
+    | 'gameListen'
+    | 'gameFind'
+    | 'gamePairs'
+    | 'gameTouch'
+    | 'gameOdd'
+    | 'gameCount'
+    | 'gameOrder'
+    | 'gameLetter';
+}[] = [
+  { id: 'touch', emoji: '👆', labelKey: 'gameTouch' },
+  { id: 'listen', emoji: '🔊', labelKey: 'gameListen' },
+  { id: 'find', emoji: '🔍', labelKey: 'gameFind' },
+  { id: 'pairs', emoji: '🧩', labelKey: 'gamePairs' },
+  { id: 'odd', emoji: '🙅', labelKey: 'gameOdd' },
+  { id: 'count', emoji: '🔢', labelKey: 'gameCount' },
+  { id: 'order', emoji: '🗓️', labelKey: 'gameOrder' },
+  { id: 'letter', emoji: '🔤', labelKey: 'gameLetter' },
+];
 
 const SCREEN_TABS: {
   id: Screen;
@@ -298,10 +329,13 @@ function MTalkApp({
   useEffect(() => {
     void loadVoicePack(profile.id);
   }, [profile.id]);
-  const { tiles: customTiles, addTile, updateTile, removeTile } = useCustomTiles(profile.id);
+  const { tiles: customTiles, addTile, updateTile, removeTile, moveTile } = useCustomTiles(profile.id);
   const { categories: customCategories, addCategory, removeCategory } = useCustomCategories(profile.id);
   const { pinnedIds, addPin, removePin } = useHome(profile.id);
   const { stats, record, masteredCount, practicedCount } = useMastery(profile.id);
+  const { recordRound } = useGameStats(profile.id);
+  /** which game the Play tab is showing — listen-and-tap, or a wordless one */
+  const [game, setGame] = useState<'listen' | PlayGame>('listen');
   const { usage, recordUse, topWordIds, usedThisWeek, newThisWeek } = useUsage(profile.id);
   const { history, addEntry } = useHistory(profile.id);
   const { recordPair, suggestNext } = useBigrams(profile.id);
@@ -527,6 +561,24 @@ function MTalkApp({
   const activeCategory =
     groupCategories.find((c) => c.id === activeCategoryId) ?? groupCategories[0];
   // memoized so QuizMode's "new word set" effect only fires on real changes
+  /* the steps of this child's own day, for the What comes next game */
+  const scheduleWords = useMemo(
+    () =>
+      schedule.steps
+        .map((step) => wordIndex.get(step.wordId))
+        .filter((w): w is Word => Boolean(w)),
+    [schedule.steps, wordIndex],
+  );
+
+  /* one … ten, so How many can say the number in the child's language */
+  const countingWords = useMemo(
+    () =>
+      ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten']
+        .map((id) => wordIndex.get(id))
+        .filter((w): w is Word => Boolean(w)),
+    [wordIndex],
+  );
+
   const visibleWords = useMemo(
     () => activeCategory?.words.filter((w) => w.level <= settings.ageMode) ?? [],
     [activeCategory, settings.ageMode],
@@ -628,10 +680,10 @@ function MTalkApp({
     setScanIndex(0);
     const timer = window.setInterval(
       () => setScanIndex((i) => (i + 1) % displayWords.length),
-      1800,
+      settings.scanMs,
     );
     return () => window.clearInterval(timer);
-  }, [scanActive, displayWords]);
+  }, [scanActive, displayWords, settings.scanMs]);
 
   const boardScreen = screen === 'home' || screen === 'talk' || screen === 'learn';
 
@@ -643,14 +695,28 @@ function MTalkApp({
       }
     : undefined;
 
-  // ✨ Next-word suggestions learned from the child's own sentences
-  const suggestionWords = (boardScreen
-    ? suggestNext(
-        sentence.length > 0 ? sentence[sentence.length - 1].id : SENTENCE_START,
-        4,
-      )
-    : []
-  )
+  /*
+   * ✨ Next-word suggestions: what this child usually taps next, and — when
+   * they have not yet produced enough sentences to have a "usually" — the
+   * taught two-word patterns. Without that fallback the row stays empty for
+   * exactly the children learning to combine words, since predictions can only
+   * come from sentences they cannot make yet.
+   *
+   * Cheap enough to do on every render, and the prediction map changes as the
+   * child taps, so memoising it would only risk showing stale words.
+   */
+  const suggestionIds: string[] = [];
+  if (boardScreen) {
+    const lastId = sentence.length > 0 ? sentence[sentence.length - 1].id : SENTENCE_START;
+    const usable = (id: string) => wordIndex.has(id) && !sentence.some((w) => w.id === id);
+    const taught =
+      lastId === SENTENCE_START ? comboStarters(usable, 4) : comboPartners(lastId, usable, 4);
+    for (const id of [...suggestNext(lastId, 4), ...taught]) {
+      if (suggestionIds.length >= 4) break;
+      if (!suggestionIds.includes(id)) suggestionIds.push(id);
+    }
+  }
+  const suggestionWords = suggestionIds
     .map((id) => wordIndex.get(id))
     .filter((w): w is Word => Boolean(w));
 
@@ -922,6 +988,24 @@ function MTalkApp({
               }}
             />
           )}
+          {/* the games all play with whichever category is showing above */}
+          {screen === 'quiz' && (
+            <div className="game-picker">
+              {GAMES.map((g) => (
+                <button
+                  key={g.id}
+                  className={`game-chip ${game === g.id ? 'game-chip-on' : ''}`}
+                  onClick={() => {
+                    playPop();
+                    setGame(g.id);
+                  }}
+                >
+                  <span className="game-chip-emoji">{g.emoji}</span>
+                  {UI[settings.language][g.labelKey]}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {screen === 'music' ? (
@@ -934,15 +1018,32 @@ function MTalkApp({
           </Suspense>
         ) : screen === 'quiz' ? (
           <Suspense fallback={<main className="quiz" />}>
-            <QuizMode
-              words={visibleWords}
-              language={settings.language}
-              rate={settings.speechRate}
-              ageMode={settings.ageMode}
-              stats={stats}
-              onAnswer={record}
-              onCelebrate={triggerCelebration}
-            />
+            {game === 'listen' ? (
+              <QuizMode
+                words={visibleWords}
+                language={settings.language}
+                rate={settings.speechRate}
+                ageMode={settings.ageMode}
+                stats={stats}
+                onAnswer={record}
+                onCelebrate={triggerCelebration}
+              />
+            ) : (
+              <PlayGames
+                game={game}
+                words={visibleWords}
+                language={settings.language}
+                rate={settings.speechRate}
+                ageMode={settings.ageMode}
+                onRound={recordRound}
+                onCelebrate={triggerCelebration}
+                scanning={settings.scanning}
+                scanMs={settings.scanMs}
+                scheduleWords={scheduleWords}
+                categories={groupCategories}
+                numberWords={countingWords}
+              />
+            )}
           </Suspense>
         ) : (
           <main className="board-scroll" onClickCapture={handleScanSelect}>
@@ -1119,6 +1220,7 @@ function MTalkApp({
             setEditorCategory(categoryId);
             setEditorOpen(true);
           }}
+          onMoveTile={(id, delta) => void moveTile(id, delta)}
           onEditTile={(tile) => {
             setEditorTile(tile);
             setEditorCategory(undefined);
@@ -1145,7 +1247,12 @@ function MTalkApp({
       )}
 
       {activeStoryId && (() => {
-        let story = STORIES.find((s) => s.id === activeStoryId);
+        // routines are read by the same player: a routine is a picture book
+        // about something the child is about to do
+        let story =
+          STORIES.find((s) => s.id === activeStoryId) ??
+          ROUTINES.find((r) => r.id === activeStoryId) ??
+          SOCIAL_SCRIPTS.find((r) => r.id === activeStoryId);
         if (!story && activeStoryId.startsWith('custom:')) {
           const cs = customStories.find((s) => `custom:${s.id}` === activeStoryId);
           if (cs) {

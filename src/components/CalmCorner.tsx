@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { UI } from '../i18n';
-import { speak } from '../services/speech';
+import { speak, stopSpeaking } from '../services/speech';
 import type { Language } from '../types';
 
 interface CalmCornerProps {
@@ -51,7 +51,7 @@ export function CalmCorner({ language, rate, onClose }: CalmCornerProps) {
   }, [index, step.phase, language, rate]);
 
   useEffect(() => {
-    return () => window.speechSynthesis?.cancel();
+    return () => stopSpeaking();
   }, []);
 
   const ui = UI[language];

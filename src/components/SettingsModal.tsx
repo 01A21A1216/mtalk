@@ -9,8 +9,11 @@ import { AccountsSection } from './AccountsSection';
 import { VoicePack } from './VoicePack';
 import { UserDirectory } from './UserDirectory';
 import { PrintSheet } from './PrintSheet';
+import { useAboutMe, hasAbout } from '../hooks/useAboutMe';
+import { useGameStats } from '../hooks/useGameStats';
 import { PACKS } from '../data/packs';
 import { exportObz, importBoardFile } from '../services/obf';
+import { describeSpeech, speak } from '../services/speech';
 import { CategoryManager } from './CategoryManager';
 import { ParentDashboard } from './ParentDashboard';
 import type { UsageMap } from '../services/analytics';
@@ -23,6 +26,15 @@ import {
   saveEntitlement,
 } from '../services/subscription';
 import type { AgeMode, AppUser, Category, CustomCategory, CustomStory, CustomTile, HistoryEntry, Profile, ScheduleStep, Settings, UserRole, VideoTile, Word, WordStat } from '../types';
+
+/** Scanning speeds, slowest first — the slow end matters more than the fast */
+const SCAN_SPEEDS: [number, string][] = [
+  [3500, '🐢 Very slow'],
+  [2500, 'Slow'],
+  [1800, 'Normal'],
+  [1200, 'Quick'],
+  [800, '🐇 Very quick'],
+];
 
 /** Colours cycled through when a foreign board arrives as new categories */
 const IMPORT_COLORS: [string, string][] = [
@@ -95,6 +107,7 @@ interface SettingsModalProps {
   onUpdate: (patch: Partial<Settings>) => void;
   onAddTile: (categoryId?: string) => void;
   onEditTile: (tile: CustomTile) => void;
+  onMoveTile: (id: string, delta: number) => void;
   onRemoveTile: (id: string) => void;
   onClose: () => void;
 }
@@ -170,6 +183,7 @@ export function SettingsModal({
   onUpdate,
   onAddTile,
   onEditTile,
+  onMoveTile,
   onRemoveTile,
   onClose,
 }: SettingsModalProps) {
@@ -192,14 +206,16 @@ export function SettingsModal({
   const [ownPinMessage, setOwnPinMessage] = useState('');
   const [entitlement, setEntitlement] = useState(() => entitlementFor(user.id));
   const [view, setView] = useState<'settings' | 'progress' | 'categories'>('settings');
-  const [printing, setPrinting] = useState<'book' | 'summary' | null>(null);
+  const [printing, setPrinting] = useState<'book' | 'summary' | 'card' | null>(null);
+  const { about, update: updateAbout } = useAboutMe(profileId);
+  const { gameStats } = useGameStats(profileId);
 
   /**
    * Puts the sheet in the DOM, prints it, then takes it out again. The print
    * stylesheet hides the app and shows only the sheet, so this works offline
    * with no popup window to be blocked.
    */
-  const print = (kind: 'book' | 'summary') => {
+  const print = (kind: 'book' | 'summary' | 'card') => {
     setPrinting(kind);
     window.setTimeout(() => {
       window.print();
@@ -249,6 +265,19 @@ export function SettingsModal({
   };
   const obfRef = useRef<HTMLInputElement>(null);
   const [obfMessage, setObfMessage] = useState('');
+  const [soundCheck, setSoundCheck] = useState('');
+
+  /**
+   * Says one word and reports which engine said it. Speech behaves differently
+   * in the installed app and in a browser, so when a tablet goes quiet this is
+   * the fastest way to see what that device actually has.
+   */
+  const checkSound = async () => {
+    setSoundCheck('Listening…');
+    const report = await describeSpeech(settings.language);
+    speak(wordLabel({ id: 'x', emoji: '', en: 'Hello', hi: 'नमस्ते', level: 1 }, settings.language), settings.language, settings.speechRate);
+    setSoundCheck(report);
+  };
 
   /** The child's whole board as a .obz a therapist's app can open */
   const exportBoard = async () => {
@@ -399,6 +428,7 @@ export function SettingsModal({
             {view === 'progress' && (
               <div className="settings-body">
                 <ParentDashboard
+                  gameStats={gameStats}
                   kids={profiles}
                   activeChildId={activeProfileId}
                   usage={usage}
@@ -420,6 +450,7 @@ export function SettingsModal({
                   customTiles={customTiles}
                   onAddTile={onAddTile}
                   onEditTile={onEditTile}
+                  onMoveTile={onMoveTile}
                   settings={settings}
                   language={settings.language}
                   onUpdate={onUpdate}
@@ -895,6 +926,26 @@ export function SettingsModal({
                 />
                 Scanning mode — tiles light up in turn, tap anywhere to choose
               </label>
+              {settings.scanning && (
+                <div className="scan-speed">
+                  <span className="ft-hint">
+                    How long each tile stays lit. Too fast and a child can never
+                    land on what they meant; too slow and a sentence takes a
+                    minute. It applies to the board and to the games.
+                  </span>
+                  <div className="pack-list">
+                    {SCAN_SPEEDS.map(([ms, label]) => (
+                      <button
+                        key={ms}
+                        className={`pack-chip ${settings.scanMs === ms ? 'pack-on' : ''}`}
+                        onClick={() => onUpdate({ scanMs: ms })}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </section>
 
             <section>
@@ -1319,7 +1370,11 @@ export function SettingsModal({
                 >
                   ✉️ Email support
                 </a>
+                <button className="btn-secondary" onClick={() => void checkSound()}>
+                  🔊 Sound check
+                </button>
               </div>
+              {soundCheck && <p className="progress-line">{soundCheck}</p>}
             </section>
 
             <section>
@@ -1355,6 +1410,113 @@ export function SettingsModal({
             </section>
 
             <section>
+              <h3>🪪 About me</h3>
+              <p className="ft-hint">
+                What a stranger would need to know if this child were ever
+                found alone: who they are, who to ring, and that no answer is
+                coming because they talk with a tablet. Print it for the
+                schoolbag.
+              </p>
+              <div className="about-grid">
+                <label className="about-row">
+                  <span>What people call me</span>
+                  <input
+                    className="text-field"
+                    value={about.callName}
+                    placeholder="Ravi"
+                    onChange={(e) => updateAbout({ callName: e.target.value })}
+                  />
+                </label>
+                <label className="about-row">
+                  <span>Full name</span>
+                  <input
+                    className="text-field"
+                    value={about.fullName}
+                    placeholder=""
+                    onChange={(e) => updateAbout({ fullName: e.target.value })}
+                  />
+                </label>
+                <label className="about-row">
+                  <span>Parent's name</span>
+                  <input
+                    className="text-field"
+                    value={about.parentName}
+                    placeholder=""
+                    onChange={(e) => updateAbout({ parentName: e.target.value })}
+                  />
+                </label>
+                <label className="about-row">
+                  <span>Phone</span>
+                  <input
+                    className="text-field"
+                    value={about.parentPhone}
+                    placeholder=""
+                    onChange={(e) => updateAbout({ parentPhone: e.target.value })}
+                  />
+                </label>
+                <label className="about-row">
+                  <span>Another phone</span>
+                  <input
+                    className="text-field"
+                    value={about.otherPhone}
+                    placeholder=""
+                    onChange={(e) => updateAbout({ otherPhone: e.target.value })}
+                  />
+                </label>
+                <label className="about-row">
+                  <span>Home address</span>
+                  <input
+                    className="text-field"
+                    value={about.address}
+                    placeholder=""
+                    onChange={(e) => updateAbout({ address: e.target.value })}
+                  />
+                </label>
+                <label className="about-row">
+                  <span>School</span>
+                  <input
+                    className="text-field"
+                    value={about.school}
+                    placeholder=""
+                    onChange={(e) => updateAbout({ school: e.target.value })}
+                  />
+                </label>
+                <label className="about-row">
+                  <span>Medical — allergies, fits, medicines</span>
+                  <input
+                    className="text-field"
+                    value={about.medical}
+                    placeholder=""
+                    onChange={(e) => updateAbout({ medical: e.target.value })}
+                  />
+                </label>
+                <label className="about-row">
+                  <span>How I talk</span>
+                  <input
+                    className="text-field"
+                    value={about.communication}
+                    placeholder="I use this tablet. Give me time."
+                    onChange={(e) => updateAbout({ communication: e.target.value })}
+                  />
+                </label>
+                <label className="about-row">
+                  <span>What helps me when I am upset</span>
+                  <input
+                    className="text-field"
+                    value={about.calming}
+                    placeholder=""
+                    onChange={(e) => updateAbout({ calming: e.target.value })}
+                  />
+                </label>
+              </div>
+              <p className="ft-hint">
+                This stays on this tablet. It is never sent to the online
+                account list, and nobody but a grown-up signed in here can see
+                it.
+              </p>
+            </section>
+
+            <section>
               <h3>🖨️ Print & share</h3>
               <p className="ft-hint">
                 For the days the tablet is flat, and for the people who need to
@@ -1368,6 +1530,11 @@ export function SettingsModal({
                 <button className="btn-secondary" onClick={() => print('summary')}>
                   🧑‍⚕️ Summary for therapy or school
                 </button>
+                {hasAbout(about) && (
+                  <button className="btn-secondary" onClick={() => print('card')}>
+                    🪪 If I am lost card
+                  </button>
+                )}
               </div>
               <p className="ft-hint">
                 The book prints six big pictures a page. The summary is one
@@ -1419,6 +1586,7 @@ export function SettingsModal({
                 usage={usage}
                 stats={masteryStats}
                 categories={boardCategories}
+                about={about}
               />
             )}
 
