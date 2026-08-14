@@ -22,6 +22,25 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!--
+                Lets a family choose MTalk as the tablet's home app.
+
+                Nothing changes until they do: this only makes MTalk eligible,
+                and Android still asks which launcher to use. Once chosen, the
+                Home button returns to the board instead of leaving it, which
+                closes the one gap screen pinning does not — a child pressing
+                Home and landing somewhere they cannot get back from.
+
+                singleTask above matters here: a home activity is launched
+                again on every press of Home, and without it the tablet would
+                stack up copies of the board.
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
         </activity>
 
         <provider
